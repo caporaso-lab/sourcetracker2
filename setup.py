@@ -41,7 +41,7 @@ setup(
     test_suite='nose.collector',
     packages=find_packages(),
     install_requires=['numpy', 'h5py', 'biom-format >= 2.1.5, < 2.2.0',
-                      'click', 'ipyparallel', 'scikit-bio == 0.4.0'],
+                      'click', 'ipyparallel', 'scikit-bio >= 0.4.2, < 0.5.0'],
     classifiers=classifiers,
     entry_points='''
         [console_scripts]
