@@ -4,7 +4,7 @@
 
 SourceTracker was originally described in [Knights et al., 2011](http://www.ncbi.nlm.nih.gov/pubmed/21765408).
 If you use this package, please cite the original SourceTracker paper linked
-above.
+above pending publication of SourceTracker 2.
 
 # Documentation
 
@@ -56,8 +56,8 @@ to activate your SourceTracker 2 environment.
 
 # Theory
 
-This readme describes some of the basic theory for use of SourceTracker2. For
-more theory and a visual walkthrough, please see the [juypter notebook](https://github.com/biota/SourceTracker_rc/blob/master/ipynb/Sourcetracking%20using%20a%20Gibbs%20Sampler.ipynb).
+This document describes some of the basic theory for use of SourceTracker2. For
+more theory and a visual walkthrough, please see the [Juypter notebook](https://github.com/biota/SourceTracker_rc/blob/master/ipynb/Sourcetracking%20using%20a%20Gibbs%20Sampler.ipynb).
 
 There are main two ways to use this script:  
  (1) Estimating the proportions of different (microbial) sources to a sample of
@@ -138,29 +138,29 @@ These usage examples expect that you are in the directory
 `sourcetracker2/data/tiny-test/`
 
 **Calculate the proportion of each source in each sink**  
-`sourcetracker2 gibbs -i otu_table.biom -m map.txt -o mixing_proportions/`
+`sourcetracker2 gibbs -i otu_table.biom -m map.txt -o example1/`
 
 **Calculate the class label (i.e. 'Env') of each source using a leave one out
 strategy**    
-`sourcetracker2 gibbs -i otu_table.biom -m map.txt --loo -o source_loo/`
+`sourcetracker2 gibbs -i otu_table.biom -m map.txt --loo -o example2/`
 
 **Calculate the proportion of each source in each sink, using 100 burnins**  
-`sourcetracker2 gibbs -i otu_table.biom -m map.txt -o mixing_proportions/ --burnin 100`
+`sourcetracker2 gibbs -i otu_table.biom -m map.txt -o example3/ --burnin 100`
 
 **Calculate the proportion of each source in each sink, using a sink
 rarefaction depth of 2500**    
-`sourcetracker2 gibbs -i otu_table.biom -m map.txt -o mixing_proportions/ --sink_rarefaction_depth 2500`
+`sourcetracker2 gibbs -i otu_table.biom -m map.txt -o example4/ --sink_rarefaction_depth 2500`
 
 **Calculate the proportion of each source in each sink, using ipyparallel to run in parallel with 5 jobs**  
-`sourcetracker2 gibbs -i otu_table.biom -m map.txt -o mixing_proportions/ --jobs 5`
+`sourcetracker2 gibbs -i otu_table.biom -m map.txt -o example5/ --jobs 5`
 
 # Miscellaneous
 
 The current implementation of SourceTracker 2 does not contain functionality for
-visualization of results or autotuning of the parameters (`alpha1`, `alpha1`,
+visualization of results or auto-tuning of the parameters (`alpha1`, `alpha1`,
 etc.). For an example of how you might visualize the data, please see
-this [juypter notebook](https://github.com/biota/SourceTracker2/blob/master/ipynb/Visualizing%20results.ipynb).
-For autotuning functionality, please see the original R code.
+this [Juypter notebook](https://github.com/biota/SourceTracker2/blob/master/ipynb/Visualizing%20results.ipynb).
+For auto-tuning functionality, please see the original R code.
 
 Like the old SourceTracker, SourceTracker2 rarifies the source environments it
 collapses by default.
