@@ -18,8 +18,8 @@ script:
   - flake8 sourcetracker setup.py
   - sourcetracker2 gibbs --help
   - cd data/tiny-test/
-  - sourcetracker2 gibbs -i otu_table.biom -m map.txt -o mixing_proportions/
-  - sourcetracker2 gibbs -i otu_table.biom -m map.txt --loo -o source_loo/
-  - sourcetracker2 gibbs -i otu_table.biom -m map.txt -o mixing_proportions/ --burnin 100
-  - sourcetracker2 gibbs -i otu_table.biom -m map.txt -o mixing_proportions/ --sink_rarefaction_depth 2500
-  - sourcetracker2 gibbs -i otu_table.biom -m map.txt -o mixing_proportions/ --jobs 5
+  - sourcetracker2 gibbs -i otu_table.biom -m map.txt -o example1/
+  - sourcetracker2 gibbs -i otu_table.biom -m map.txt --loo -o example2/
+  - sourcetracker2 gibbs -i otu_table.biom -m map.txt -o example3/ --burnin 100
+  - sourcetracker2 gibbs -i otu_table.biom -m map.txt -o example4/ --sink_rarefaction_depth 2500
+  - sourcetracker2 gibbs -i otu_table.biom -m map.txt -o example5/ --jobs 5
