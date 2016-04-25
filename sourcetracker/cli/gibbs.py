@@ -19,11 +19,13 @@ import subprocess
 import time
 from biom import load_table
 from biom.table import Table
-from sourcetracker._cli import cli
-from sourcetracker._sourcetracker import (
-    parse_mapping_file, collapse_sources, sinks_and_sources,
-    _cli_sync_biom_and_sample_metadata, _cli_collate_results, _cli_loo_runner,
-    _cli_sink_source_prediction_runner, subsample_sources_sinks)
+from sourcetracker.cli import cli
+from sourcetracker.sourcetracker import (parse_mapping_file, collapse_sources,
+                                         sinks_and_sources,
+                                         _cli_sync_biom_and_sample_metadata,
+                                         _cli_collate_results, _cli_loo_runner,
+                                         _cli_sink_source_prediction_runner,
+                                         subsample_sources_sinks)
 from ipyparallel import Client
 
 
@@ -33,20 +35,19 @@ from ipyparallel import Client
               help='Path to input BIOM table.')
 @click.option('-m', '--mapping_fp', required=True,
               type=click.Path(exists=True, dir_okay=False),
-              help='Path to sample metadata mapping file.')
+              help='Path to input category mapping file (sample metadata).')
 @click.option('-o', '--output_dir', required=True,
               type=click.Path(exists=False, dir_okay=False),
               help='Path to the output directory to be created.')
 @click.option('--loo', required=False, default=False, is_flag=True,
-              show_default=True,
               help=('Classify each sample in `sources` using a leave-one-out '
                     'strategy. Replicates -s option in Knights et al. '
                     'sourcetracker.'))
 @click.option('--jobs', required=False, default=1,
-              type=click.INT, show_default=True,
+              type=click.INT,
               help='Number of processes to launch.')
 @click.option('--alpha1', required=False, default=.001,
-              type=click.FLOAT, show_default=True,
+              type=click.FLOAT,
               help=('Prior counts of each species in the training '
                     'environments. Higher values decrease the trust in the '
                     'training environments, and make the source environment '
@@ -57,41 +58,41 @@ from ipyparallel import Client
                     'biological samples are available from a source '
                     'environment. A more conservative value would be 0.01.'))
 @click.option('--alpha2', required=False, default=.001,
-              type=click.FLOAT, show_default=True,
+              type=click.FLOAT,
               help=('Prior counts of each species in Unknown environment. '
                     'Higher values make the Unknown environment smoother and '
                     'less prone to overfitting given a training sample.'))
 @click.option('--beta', required=False, default=10,
-              type=click.INT, show_default=True,
+              type=click.INT,
               help=('Count to be added to each species in each environment, '
                     'including `unknown`.'))
 @click.option('--source_rarefaction_depth', required=False, default=1000,
-              type=click.INT, show_default=True,
+              type=click.INT,
               help=('Depth at which to rarify sources. If 0, no '
                     'rarefaction performed.'))
 @click.option('--sink_rarefaction_depth', required=False, default=1000,
-              type=click.INT, show_default=True,
+              type=click.INT,
               help=('Depth at which to rarify sinks. If 0, no '
                     'rarefaction performed.'))
 @click.option('--restarts', required=False, default=10,
-              type=click.INT, show_default=True,
+              type=click.INT,
               help=('Number of independent Markov chains to grow. '
                     '`draws_per_restart` * `restarts` gives the number of '
                     'samplings of the mixing proportions that will be '
                     'generated.'))
 @click.option('--draws_per_restart', required=False, default=1,
-              type=click.INT, show_default=True,
+              type=click.INT,
               help=('Number of times to sample the state of the Markov chain '
                     'for each independent chain grown.'))
 @click.option('--burnin', required=False, default=100,
-              type=click.INT, show_default=True,
+              type=click.INT,
               help=('Number of passes (withdarawal and reassignment of every '
                     'sequence in the sink) that will be made before a sample '
                     '(draw) will be taken. Higher values allow more '
                     'convergence towards the true distribtion before draws '
                     'are taken.'))
 @click.option('--delay', required=False, default=10,
-              type=click.INT, show_default=True,
+              type=click.INT,
               help=('Number passes between each sampling (draw) of the '
                     'Markov chain. Once the burnin passes have been made, a '
                     'sample will be taken every `delay` number of passes. '
@@ -99,33 +100,15 @@ from ipyparallel import Client
                     'the impact of correlation between adjacent states of the '
                     'Markov chain.'))
 @click.option('--cluster_start_delay', required=False, default=25,
-              type=click.INT, show_default=True,
+              type=click.INT,
               help=('When using multiple jobs, the script has to start an '
                     '`ipcluster`. If ipcluster does not recognize that it '
                     'has been successfully started, the jobs will not be '
                     'successfully launched. If this is happening, increase '
                     'this parameter.'))
-@click.option('--source_sink_column', required=False, default='SourceSink',
-              type=click.STRING, show_default=True,
-              help=('Sample metadata column indicating which samples should be'
-                    ' treated as sources and which as sinks.'))
-@click.option('--source_column_value', required=False, default='source',
-              type=click.STRING, show_default=True,
-              help=('Value in source_sink_column indicating which samples '
-                    'should be treated as sources.'))
-@click.option('--sink_column_value', required=False, default='sink',
-              type=click.STRING, show_default=True,
-              help=('Value in source_sink_column indicating which samples '
-                    'should be treated as sinks.'))
-@click.option('--source_category_column', required=False, default='Env',
-              type=click.STRING, show_default=True,
-              help=('Sample metadata column indicating the type of each '
-                    'source sample.'))
 def gibbs(table_fp, mapping_fp, output_dir, loo, jobs, alpha1, alpha2, beta,
           source_rarefaction_depth, sink_rarefaction_depth,
-          restarts, draws_per_restart, burnin, delay, cluster_start_delay,
-          source_sink_column, source_column_value, sink_column_value,
-          source_category_column):
+          restarts, draws_per_restart, burnin, delay, cluster_start_delay):
     '''Gibb's sampler for Bayesian estimation of microbial sample sources.
 
     For details, see the project README file.
@@ -158,9 +141,7 @@ def gibbs(table_fp, mapping_fp, output_dir, loo, jobs, alpha1, alpha2, beta,
 
     # Parse the mapping file and options to get the samples requested for
     # sources and sinks.
-    source_samples, sink_samples = sinks_and_sources(
-        sample_metadata, column_header=source_sink_column,
-        source_value=source_column_value, sink_value=sink_column_value)
+    source_samples, sink_samples = sinks_and_sources(sample_metadata)
 
     # If we have no source samples neither normal operation or loo will work.
     # Will also likely get strange errors.
@@ -171,8 +152,7 @@ def gibbs(table_fp, mapping_fp, output_dir, loo, jobs, alpha1, alpha2, beta,
     # Prepare the 'sources' matrix by collapsing the `source_samples` by their
     # metadata values.
     sources_envs, sources_data = collapse_sources(source_samples,
-                                                  sample_metadata,
-                                                  source_category_column,
+                                                  sample_metadata, 'Env',
                                                   biom_table, sort=True)
 
     # Rarefiy data if requested.
@@ -184,7 +164,7 @@ def gibbs(table_fp, mapping_fp, output_dir, loo, jobs, alpha1, alpha2, beta,
     # Build function that require only a single parameter -- sample -- to
     # enable parallel processing if requested.
     if loo:
-        f = partial(_cli_loo_runner, source_category=source_category_column,
+        f = partial(_cli_loo_runner, source_category='Env',
                     alpha1=alpha1, alpha2=alpha2, beta=beta,
                     restarts=restarts, draws_per_restart=draws_per_restart,
                     burnin=burnin, delay=delay,

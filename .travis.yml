@@ -17,6 +17,3 @@ script:
   - nosetests
   - flake8 sourcetracker setup.py
   - sourcetracker2 gibbs --help
-  - cd data/tiny-test/
-  - sourcetracker2 gibbs -i otu_table.biom -m map.txt -o example1/
-  - sourcetracker2 gibbs -i otu_table.biom -m alt-map.txt -o example2/ --source_sink_column source-or-sink --source_column_value src --sink_column_value snk --source_category_column sample-type

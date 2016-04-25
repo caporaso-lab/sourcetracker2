@@ -1,1 +1,0 @@
-#SampleID	source-or-sink	sample-types9	src	sewages8	src	sewages3	snk	pond1s2	snk	pond2s1	snk	pond3s0	snk	pond4s7	src	drainwaters6	snk	pond5s5	src	seawaters4	src	seawater

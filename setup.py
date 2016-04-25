@@ -45,5 +45,5 @@ setup(
     classifiers=classifiers,
     entry_points='''
         [console_scripts]
-        sourcetracker2=sourcetracker._cli:cli
+        sourcetracker2=sourcetracker.cli:cli
         ''')
