@@ -11,11 +11,13 @@ from __future__ import division
 from unittest import TestCase, main
 import numpy as np
 from biom.table import Table
-from sourcetracker._sourcetracker import (
-    parse_mapping_file, collapse_sources, ConditionalProbability,
-    gibbs_sampler, Sampler, sinks_and_sources,
-    _cli_sync_biom_and_sample_metadata, _cli_single_sample_formatter,
-    _cli_collate_results, subsample_sources_sinks)
+from sourcetracker.sourcetracker import (parse_mapping_file, collapse_sources,
+                                         ConditionalProbability, gibbs_sampler,
+                                         Sampler, sinks_and_sources,
+                                         _cli_sync_biom_and_sample_metadata,
+                                         _cli_single_sample_formatter,
+                                         _cli_collate_results,
+                                         subsample_sources_sinks)
 
 
 class TestPreparationFunctions(TestCase):
@@ -315,23 +317,6 @@ class TestCLIFunctions(TestCase):
             sinks_and_sources(self.sample_metadata_3)
         exp_source_samples = ['s1', 's5', 's0', 's2', 's100']
         exp_sink_samples = []
-        self.assertEqual(set(exp_sink_samples), set(obs_sink_samples))
-        self.assertEqual(set(exp_source_samples), set(obs_source_samples))
-
-    def test_sinks_and_sources_alt_strings(self):
-
-        metadata = {
-           's1':   {'source-or-sink': '--source!'},
-           's2':   {'source-or-sink': '--sink!'},
-           's5':   {'source-or-sink': '--source!'},
-           's0':   {'source-or-sink': '--source!'},
-           's100': {'source-or-sink': '--sink!'}}
-
-        obs_source_samples, obs_sink_samples = sinks_and_sources(
-            metadata, column_header='source-or-sink', source_value='--source!',
-            sink_value='--sink!')
-        exp_source_samples = ['s1', 's5', 's0']
-        exp_sink_samples = ['s2', 's100']
         self.assertEqual(set(exp_sink_samples), set(obs_sink_samples))
         self.assertEqual(set(exp_source_samples), set(obs_source_samples))
 
