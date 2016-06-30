@@ -916,7 +916,7 @@ def _gibbs(source_df, sink_df, alpha1, alpha2, beta, restarts,
     >>> from ipyparallel import Client
     >>> import subprocess
     >>> import time
-    >>> from sourcetracker.sourcetracker import \
+    >>> from sourcetracker._sourcetracker import \
         (_gibbs, _cli_sink_source_prediction_runner)
 
     Prepare some source data.
@@ -961,6 +961,11 @@ def _gibbs(source_df, sink_df, alpha1, alpha2, beta, restarts,
     >>> mp, mps = _gibbs(source_df, sink_df, alpha1, alpha2, beta, restarts,
                          draws_per_restart, burnin, delay, cluster=c)
     '''
+    if source_df.isnull().any().any() or sink_df.isnull().any().any():
+        raise ValueError('The source or sink dataframe contains nan or null '
+                         'values. This will result in propagating error in '
+                         'probability calculations. Remove nan/null values '
+                         'before passing to _gibbs.')
     with TemporaryDirectory() as tmpdir:
         f = partial(_cli_sink_source_prediction_runner, alpha1=alpha1,
                     alpha2=alpha2, beta=beta, restarts=restarts,
