@@ -13,7 +13,8 @@ import unittest
 import pandas as pd
 from skbio.util import assert_data_frame_almost_equal
 
-from sourcetracker._compare import compare_sinks, compare_sink_metrics
+from sourcetracker import compare_sinks, compare_sink_metrics
+from sourcetracker._compare import _validate_dataframes
 
 
 class CompareSinksTests(unittest.TestCase):
@@ -44,6 +45,62 @@ class CompareSinksTests(unittest.TestCase):
                             'sink5': 0.1238333602454384,
                             'sink6': 0.17419230621125187}}
         self.mpm1 = pd.DataFrame(mpm1)
+
+    def test_validate_dataframes_valid(self):
+        df1 = {'Unknown': {'sink1': 0.25, 'sink2': 0.25},
+               'Source1': {'sink1': 0.50, 'sink2': 0.25},
+               'Source2': {'sink1': 0.25, 'sink2': 0.25}}
+        df1 = pd.DataFrame(df1)
+        df2 = {'Unknown': {'sink1': 0.1, 'sink2': 0.25},
+               'Source1': {'sink1': 0.1, 'sink2': 0.25},
+               'Source2': {'sink1': 0.8, 'sink2': 0.25}}
+        df2 = pd.DataFrame(df2)
+        _validate_dataframes(df1, df2)
+
+    def test_validate_dataframes_invalid_sources(self):
+        df1 = {'Hello': {'sink1': 0.25, 'sink2': 0.25},
+               'Source1': {'sink1': 0.50, 'sink2': 0.25},
+               'Source2': {'sink1': 0.25, 'sink2': 0.25}}
+        df1 = pd.DataFrame(df1)
+        df2 = {'Unknown': {'sink1': 0.1, 'sink2': 0.25},
+               'Source1': {'sink1': 0.1, 'sink2': 0.25},
+               'Source2': {'sink1': 0.8, 'sink2': 0.25}}
+        df2 = pd.DataFrame(df2)
+        with self.assertRaises(ValueError):
+            _validate_dataframes(df1, df2)
+
+        df1 = {'Source1': {'sink1': 0.50, 'sink2': 0.25},
+               'Source2': {'sink1': 0.50, 'sink2': 0.25}}
+        df1 = pd.DataFrame(df1)
+        df2 = {'Unknown': {'sink1': 0.1, 'sink2': 0.25},
+               'Source1': {'sink1': 0.1, 'sink2': 0.25},
+               'Source2': {'sink1': 0.8, 'sink2': 0.25}}
+        df2 = pd.DataFrame(df2)
+        with self.assertRaises(ValueError):
+            _validate_dataframes(df1, df2)
+
+    def test_validate_dataframes_invalid_sinks(self):
+        df1 = {'Unknown': {'sink1': 0.25, 'sink3': 0.25},
+               'Source1': {'sink1': 0.50, 'sink3': 0.25},
+               'Source2': {'sink1': 0.25, 'sink3': 0.25}}
+        df1 = pd.DataFrame(df1)
+        df2 = {'Unknown': {'sink1': 0.1, 'sink2': 0.25},
+               'Source1': {'sink1': 0.1, 'sink2': 0.25},
+               'Source2': {'sink1': 0.8, 'sink2': 0.25}}
+        df2 = pd.DataFrame(df2)
+        with self.assertRaises(ValueError):
+            _validate_dataframes(df1, df2)
+
+        df1 = {'Unknown': {'sink1': 0.25},
+               'Source1': {'sink1': 0.50},
+               'Source2': {'sink1': 0.50}}
+        df1 = pd.DataFrame(df1)
+        df2 = {'Unknown': {'sink1': 0.1, 'sink2': 0.25},
+               'Source1': {'sink1': 0.1, 'sink2': 0.25},
+               'Source2': {'sink1': 0.8, 'sink2': 0.25}}
+        df2 = pd.DataFrame(df2)
+        with self.assertRaises(ValueError):
+            _validate_dataframes(df1, df2)
 
     def test_compare_sink_metrics(self):
         self.assertEqual(compare_sink_metrics(),

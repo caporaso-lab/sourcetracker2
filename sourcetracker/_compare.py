@@ -62,6 +62,8 @@ def compare_sinks(observed, expected, metric):
 
 
 def _validate_dataframes(observed, expected):
+    """ Confirm index and columns contain the same values
+    """
     if set(observed.index) != set(expected.index):
         raise ValueError('Sinks in observed and expected results must be '
                          'identical.')
