@@ -32,7 +32,7 @@ from ipyparallel import Client
               type=click.Path(exists=True, dir_okay=False),
               help='Path to sample metadata mapping file.')
 @click.option('-o', '--output_dir', required=True,
-              type=click.Path(exists=False, dir_okay=False),
+              type=click.Path(exists=False, dir_okay=True),
               help='Path to the output directory to be created.')
 @click.option('--loo', required=False, default=False, is_flag=True,
               show_default=True,
