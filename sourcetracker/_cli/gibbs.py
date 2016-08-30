@@ -11,28 +11,31 @@
 from __future__ import division
 
 import os
-import click
 import subprocess
 import time
-import pandas as pd
+
+import click
 from biom import load_table
+from ipyparallel import Client
+
 from sourcetracker._cli import cli
 from sourcetracker._sourcetracker import (biom_to_df, _gibbs, _gibbs_loo,
                                           intersect_and_sort_samples,
                                           get_samples, collapse_source_data,
                                           subsample_dataframe)
-from ipyparallel import Client
+from sourcetracker._util import parse_sample_metadata
 
 
 @cli.command(name='gibbs')
 @click.option('-i', '--table_fp', required=True,
-              type=click.Path(exists=True, dir_okay=False),
+              type=click.Path(exists=True, dir_okay=False, readable=True),
               help='Path to input BIOM table.')
 @click.option('-m', '--mapping_fp', required=True,
-              type=click.Path(exists=True, dir_okay=False),
+              type=click.Path(exists=True, dir_okay=False, readable=True),
               help='Path to sample metadata mapping file.')
 @click.option('-o', '--output_dir', required=True,
-              type=click.Path(exists=False, dir_okay=True),
+              type=click.Path(exists=False, dir_okay=True, file_okay=False,
+                              writable=True),
               help='Path to the output directory to be created.')
 @click.option('--loo', required=False, default=False, is_flag=True,
               show_default=True,
@@ -141,9 +144,7 @@ def gibbs(table_fp, mapping_fp, output_dir, loo, jobs, alpha1, alpha2, beta,
 
     # Load the metadata file and feature table. Do a data check on the
     # feature_table.
-    sample_metadata = pd.read_table(mapping_fp, sep='\t', dtype=object)
-    sample_metadata.set_index(sample_metadata.columns[0], drop=True,
-                              append=False, inplace=True)
+    sample_metadata = parse_sample_metadata(open(mapping_fp, 'U'))
     _ft = load_table(table_fp)
     feature_table = biom_to_df(_ft, apply_fractional_value_correction=True)
 
