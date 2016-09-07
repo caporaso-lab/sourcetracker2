@@ -13,19 +13,19 @@ of SourceTracker 1 should use the command line functionality (`sourcetracker2 gi
 Programmatic users are encouraged to use the API (exposed via `gibbs` and `gibbs_loo`).
 
 The help documentation is broken down into sections with separate subsections for
-API and CLI usage. 
+API and CLI usage.
 
 # File Formats
 
-## Command Line 
+## Command Line
 For descriptions of all file formats and options, please see the help
-documentation, available with the command `sourcetracker2 gibbs --help`. 
+documentation, available with the command `sourcetracker2 gibbs --help`.
 
 This script requires a feature X sample contingency table (traditionally an OTU
-table) and sample metadata (traditionally a mapping file). 
+table) and sample metadata (traditionally a mapping file).
 
 The feature X sample table is an `nXm` table (`n` rows, `m` columns) with sample IDs in the first column, and feature IDs in the first row. The values in each 'cell' of the table
-must be integer counts. 
+must be integer counts.
 
 The sample metadata file is an `sXk` table (`s` rows, `k` columns) with sample IDs in
 the first column, and metadata headers in the first row. The values in each 'cell' of the
@@ -39,9 +39,9 @@ and feature (OTU) tables we have included [here](https://github.com/biota/source
 For descriptions of the requirements, please see documentation in the `gibbs`
 function. Very briefly, this function wraps the main workhorse function `_gibbs_sampler`
 and exposes all the parameters necessary to control the behavior of the Gibb's sampling
-as well as the parallel functionality etc. 
+as well as the parallel functionality etc.
 
-A superficial but important difference from the CLI framework is that, internally, 
+A superficial but important difference from the CLI framework is that, internally,
 SourceTracker 2 represents all tables as sample X feature (samples are rows,
 columns are features). This reflects choices in Dan's original code, as well as
 eases metadata based subsetting of tables. The API functions expect data in
@@ -68,7 +68,7 @@ their mean value for each feature is computed and used in the analysis. See the
 'Theory' section below for a discussion of this approach.
 
 ## API
-The `gibbs` and `gibbs_loo` functions due minimal preprocessing on the input data. 
+The `gibbs` and `gibbs_loo` functions due minimal preprocessing on the input data.
 The source and sink dataframes are treated as final (no collapsing is done on them),
 i.e. each sink is treated independently. The data is **not** rarified, the tables
 are expected to have the desired row sums.
@@ -89,13 +89,13 @@ origin source of each sink sequence (count of a feature).
 
 ## API
 The outputs of the `gibbs` and `gibbs_loo` functions are identical to the command line
-outputs, just in dataframe form. 
+outputs, just in dataframe form.
 
 
 # Documentation
 
 This script replicates and extends the functionality of Dan Knights's
-SourceTracker R package. 
+SourceTracker R package.
 
 A major improvement in this version of SourceTracker is the ability to run it in parallel.
 Currently, parallelization across a single machine is
@@ -116,7 +116,7 @@ SourceTracker2 is Python 3 software. The easiest way to install it is using Anac
 To install SourceTracker 2 using Anaconda, run the following commands:
 
 ```bash
-conda create -n st2 python=3.5 numpy scipy scikit-bio=0.4.3 biom-format h5py hdf5
+conda create -n st2 -c biocore python=3.5 numpy scipy scikit-bio biom-format h5py hdf5
 source activate st2
 pip install sourcetracker
 ```

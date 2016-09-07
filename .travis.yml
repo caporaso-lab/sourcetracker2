@@ -10,7 +10,7 @@ before_install:
   - ./miniconda.sh -b
   - export PATH=/home/travis/miniconda3/bin:$PATH
 install:
-  - conda create --yes -n st2 python=$PYTHON_VERSION nose numpy scipy h5py flake8 scikit-bio=0.4.0
+  - conda create --yes -n st2 -c biocore python=$PYTHON_VERSION nose numpy scipy h5py flake8 scikit-bio
   - source activate st2
   - pip install coveralls
   - pip install .
