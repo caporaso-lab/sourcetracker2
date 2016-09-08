@@ -11,8 +11,8 @@ from __future__ import division
 from unittest import TestCase, main
 
 import numpy as np
-
 import pandas as pd
+import matplotlib.pyplot as plt
 
 from sourcetracker._sourcetracker import (intersect_and_sort_samples,
                                           collapse_source_data,
@@ -25,7 +25,8 @@ from sourcetracker._sourcetracker import (intersect_and_sort_samples,
                                           cumulative_proportions,
                                           single_sink_feature_table,
                                           ConditionalProbability,
-                                          gibbs_sampler, gibbs)
+                                          gibbs_sampler, gibbs,
+                                          plot_heatmap)
 
 
 class TestValidateGibbsInput(TestCase):
@@ -1185,6 +1186,27 @@ class TestGibbs(TestCase):
         pd.util.testing.assert_index_equal(obs_mpm.columns, exp_mpm.columns)
         np.testing.assert_allclose(obs_mpm.values, exp_mpm.values, atol=.01)
 
+
+class PlotHeatmapTests(TestCase):
+
+    def setUp(self):
+        vals = np.array([[0., 0.62444444, 0., 0.01555556, 0.36],
+                         [0.68444444, 0., 0.09333333, 0.12666667, 0.09555556],
+                         [0., 0.00888889, 0., 0.08222222, 0.90888889],
+                         [0.19111111, 0.2, 0.5, 0., 0.10888889]])
+        source_names = ['source1a', 'source1b', 'source2a', 'source2b']
+        self.mpm = pd.DataFrame(vals, index=source_names,
+                                columns=source_names + ['Unknown'])
+
+    def test_defaults(self):
+        # plot_heatmap call returns successfully
+        fig, ax = plot_heatmap(self.mpm)
+
+    def test_non_defaults(self):
+        # plot_heatmap call returns successfully
+        fig, ax = plot_heatmap(self.mpm, cm=plt.cm.jet,
+                               xlabel='Other 1', ylabel='Other 2',
+                               title='Other 3')
 
 if __name__ == '__main__':
     main()

@@ -8,9 +8,9 @@
 # ----------------------------------------------------------------------------
 
 from sourcetracker._compare import compare_sinks, compare_sink_metrics
-from sourcetracker._sourcetracker import gibbs, plot_mpm
+from sourcetracker._sourcetracker import gibbs, plot_heatmap
 
 __version__ = '2.0.1-dev'
 _readme_url = "https://github.com/biota/sourcetracker2/blob/master/README.md"
 
-__all__ = ['compare_sinks', 'compare_sink_metrics', 'gibbs', 'plot_mpm']
+__all__ = ['compare_sinks', 'compare_sink_metrics', 'gibbs', 'plot_heatmap']

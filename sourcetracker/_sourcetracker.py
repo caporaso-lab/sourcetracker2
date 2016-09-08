@@ -997,8 +997,8 @@ def collate_gibbs_results(all_envcounts, all_env_assignments,
     return props, props_stds, fts
 
 
-def plot_mpm(mpm, cm=plt.cm.viridis, xlabel='Sources', ylabel='Sinks',
-             title='Mixing Proportions (as Fraction)'):
+def plot_heatmap(mpm, cm=plt.cm.viridis, xlabel='Sources', ylabel='Sinks',
+                 title='Mixing Proportions (as Fraction)'):
     '''Make a basic mixing proportion histogram.'''
     fig = plt.figure()
     ax = fig.add_subplot(1, 1, 1)
