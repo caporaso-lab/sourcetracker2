@@ -10,32 +10,33 @@
 
 from __future__ import division
 
-import glob
 import os
-import click
-import numpy as np
-from functools import partial
 import subprocess
 import time
+
+import click
 from biom import load_table
-from biom.table import Table
-from sourcetracker._cli import cli
-from sourcetracker._sourcetracker import (
-    parse_mapping_file, collapse_sources, sinks_and_sources,
-    _cli_sync_biom_and_sample_metadata, _cli_collate_results, _cli_loo_runner,
-    _cli_sink_source_prediction_runner, subsample_sources_sinks)
 from ipyparallel import Client
+
+from sourcetracker._cli import cli
+from sourcetracker._sourcetracker import (gibbs, intersect_and_sort_samples,
+                                          get_samples, collapse_source_data,
+                                          subsample_dataframe,
+                                          validate_gibbs_input, plot_heatmap)
+
+from sourcetracker._util import parse_sample_metadata, biom_to_df
 
 
 @cli.command(name='gibbs')
 @click.option('-i', '--table_fp', required=True,
-              type=click.Path(exists=True, dir_okay=False),
+              type=click.Path(exists=True, dir_okay=False, readable=True),
               help='Path to input BIOM table.')
 @click.option('-m', '--mapping_fp', required=True,
-              type=click.Path(exists=True, dir_okay=False),
+              type=click.Path(exists=True, dir_okay=False, readable=True),
               help='Path to sample metadata mapping file.')
 @click.option('-o', '--output_dir', required=True,
-              type=click.Path(exists=False, dir_okay=False),
+              type=click.Path(exists=False, dir_okay=True, file_okay=False,
+                              writable=True),
               help='Path to the output directory to be created.')
 @click.option('--loo', required=False, default=False, is_flag=True,
               show_default=True,
@@ -47,30 +48,30 @@ from ipyparallel import Client
               help='Number of processes to launch.')
 @click.option('--alpha1', required=False, default=.001,
               type=click.FLOAT, show_default=True,
-              help=('Prior counts of each species in the training '
+              help=('Prior counts of each feature in the training '
                     'environments. Higher values decrease the trust in the '
                     'training environments, and make the source environment '
-                    'distrubitons over taxa smoother. By default, this is '
-                    'set to 0.001, which indicates reasonably high trust in '
-                    'all source environments, even those with few training '
-                    'sequences. This is useful when only a small number of '
-                    'biological samples are available from a source '
-                    'environment. A more conservative value would be 0.01.'))
-@click.option('--alpha2', required=False, default=.001,
+                    'distributions over taxa smoother. A value of 0.001 '
+                    'indicates reasonably high trust in all source '
+                    'environments, even those with few training sequences. A '
+                    'more conservative value would be 0.01.'))
+@click.option('--alpha2', required=False, default=.1,
               type=click.FLOAT, show_default=True,
-              help=('Prior counts of each species in Unknown environment. '
-                    'Higher values make the Unknown environment smoother and '
-                    'less prone to overfitting given a training sample.'))
+              help=('Prior counts of each feature in the `unknown` environment'
+                    ' as a fraction of the counts of the current sink being '
+                    'evaluated. Higher values make the `unknown` environment '
+                    'smoother and less prone to overfitting given a training '
+                    'sample.'))
 @click.option('--beta', required=False, default=10,
-              type=click.INT, show_default=True,
-              help=('Count to be added to each species in each environment, '
-                    'including `unknown`.'))
+              type=click.FLOAT, show_default=True,
+              help=('Count to be added to each feature in each environment, '
+                    'including `unknown` for `p_v` calculations.'))
 @click.option('--source_rarefaction_depth', required=False, default=1000,
-              type=click.INT, show_default=True,
+              type=click.IntRange(min=0, max=None), show_default=True,
               help=('Depth at which to rarify sources. If 0, no '
                     'rarefaction performed.'))
 @click.option('--sink_rarefaction_depth', required=False, default=1000,
-              type=click.INT, show_default=True,
+              type=click.IntRange(min=0, max=None), show_default=True,
               help=('Depth at which to rarify sinks. If 0, no '
                     'rarefaction performed.'))
 @click.option('--restarts', required=False, default=10,
@@ -94,14 +95,14 @@ from ipyparallel import Client
                     '(draw) will be taken. Higher values allow more '
                     'convergence towards the true distribtion before draws '
                     'are taken.'))
-@click.option('--delay', required=False, default=10,
+@click.option('--delay', required=False, default=1,
               type=click.INT, show_default=True,
               help=('Number passes between each sampling (draw) of the '
                     'Markov chain. Once the burnin passes have been made, a '
-                    'sample will be taken every `delay` number of passes. '
-                    'This is also known as `thinning`. Thinning helps reduce '
-                    'the impact of correlation between adjacent states of the '
-                    'Markov chain.'))
+                    'sample will be taken, and then taken again every `delay` '
+                    'number of passes. This is also known as `thinning`. '
+                    'Thinning helps reduce the impact of correlation between '
+                    'adjacent states of the Markov chain.'))
 @click.option('--cluster_start_delay', required=False, default=25,
               type=click.INT, show_default=True,
               help=('When using multiple jobs, the script has to start an '
@@ -109,6 +110,14 @@ from ipyparallel import Client
                     'has been successfully started, the jobs will not be '
                     'successfully launched. If this is happening, increase '
                     'this parameter.'))
+@click.option('--per_sink_feature_assignments', required=False, default=False,
+              is_flag=True, show_default=True,
+              help=('If True, this option will cause SourceTracker2 to write '
+                    'out a feature table for each sink (or source if `--loo` '
+                    'is passed). These feature tables contain the specific '
+                    'sequences that contributed to a sink from a given '
+                    'source. This option can be memory intensive if there are '
+                    'a large number of features.'))
 @click.option('--source_sink_column', required=False, default='SourceSink',
               type=click.STRING, show_default=True,
               help=('Sample metadata column indicating which samples should be'
@@ -125,12 +134,11 @@ from ipyparallel import Client
               type=click.STRING, show_default=True,
               help=('Sample metadata column indicating the type of each '
                     'source sample.'))
-def gibbs(table_fp, mapping_fp, output_dir, loo, jobs, alpha1, alpha2, beta,
-          source_rarefaction_depth, sink_rarefaction_depth,
-          restarts, draws_per_restart, sample_with_replacement,
-          burnin, delay, cluster_start_delay,
-          source_sink_column, source_column_value, sink_column_value,
-          source_category_column):
+def gibbs_cli(table_fp, mapping_fp, output_dir, loo, jobs, alpha1, alpha2,
+              beta, source_rarefaction_depth, sink_rarefaction_depth, restarts,
+              draws_per_restart, burnin, delay, cluster_start_delay,
+              per_sink_feature_assignments, source_sink_column,
+              source_column_value, sink_column_value, source_category_column):
     '''Gibb's sampler for Bayesian estimation of microbial sample sources.
 
     For details, see the project README file.
@@ -139,97 +147,101 @@ def gibbs(table_fp, mapping_fp, output_dir, loo, jobs, alpha1, alpha2, beta,
     # failed if so.
     os.mkdir(output_dir)
 
-    # Load the mapping file and biom table and remove samples which are not
-    # shared.
-    o = open(mapping_fp, 'U')
-    sample_metadata_lines = o.readlines()
-    o.close()
+    # Load the metadata file and feature table.
+    sample_metadata = parse_sample_metadata(open(mapping_fp, 'U'))
+    feature_table = biom_to_df(load_table(table_fp))
 
-    sample_metadata, biom_table = \
-        _cli_sync_biom_and_sample_metadata(
-            parse_mapping_file(sample_metadata_lines),
-            load_table(table_fp))
+    # Do high level check on feature data.
+    feature_table = validate_gibbs_input(feature_table)
 
-    # If biom table has fractional counts, it can produce problems in indexing
-    # later on.
-    biom_table.transform(lambda data, id, metadata: np.ceil(data))
+    # Remove samples not shared by both feature and metadata tables and order
+    # rows equivalently.
+    sample_metadata, feature_table = \
+        intersect_and_sort_samples(sample_metadata, feature_table)
 
-    # If biom table has sample metadata, there will be pickling errors when
-    # submitting multiple jobs. We remove the metadata by making a copy of the
-    # table without metadata.
-    biom_table = Table(biom_table._data.toarray(),
-                       biom_table.ids(axis='observation'),
-                       biom_table.ids(axis='sample'))
-
-    # Parse the mapping file and options to get the samples requested for
-    # sources and sinks.
-    source_samples, sink_samples = sinks_and_sources(
-        sample_metadata, column_header=source_sink_column,
-        source_value=source_column_value, sink_value=sink_column_value,
-        replace=sample_with_replacement)
+    # Identify source and sink samples.
+    source_samples = get_samples(sample_metadata, source_sink_column,
+                                 source_column_value)
+    sink_samples = get_samples(sample_metadata, source_sink_column,
+                               sink_column_value)
 
     # If we have no source samples neither normal operation or loo will work.
     # Will also likely get strange errors.
     if len(source_samples) == 0:
-        raise ValueError('Mapping file or biom table passed contain no '
-                         '`source` samples.')
+        raise ValueError(('You passed %s as the `source_sink_column` and %s '
+                          'as the `source_column_value`. There are no samples '
+                          'which are sources under these values. Please see '
+                          'the help documentation and check your mapping '
+                          'file.') % (source_sink_column, source_column_value))
 
     # Prepare the 'sources' matrix by collapsing the `source_samples` by their
     # metadata values.
-    sources_envs, sources_data = collapse_sources(source_samples,
-                                                  sample_metadata,
-                                                  source_category_column,
-                                                  biom_table, sort=True)
+    csources = collapse_source_data(sample_metadata, feature_table,
+                                    source_samples, source_category_column,
+                                    'mean')
 
-    # Rarefiy data if requested.
-    sources_data, biom_table = \
-        subsample_sources_sinks(sources_data, sink_samples, biom_table,
-                                source_rarefaction_depth,
-                                sink_rarefaction_depth)
+    # Rarify collapsed source data if requested.
+    if source_rarefaction_depth > 0:
+        d = (csources.sum(1) >= source_rarefaction_depth)
+        if not d.all():
+            count_too_shallow = (~d).sum()
+            shallowest = csources.sum(1).min()
+            raise ValueError(('You requested rarefaction of source samples at '
+                              '%s, but there are %s collapsed source samples '
+                              'that have less sequences than that. The '
+                              'shallowest of these is %s sequences.') %
+                             (source_rarefaction_depth, count_too_shallow,
+                              shallowest))
+        else:
+            csources = subsample_dataframe(csources, source_rarefaction_depth)
 
-    # Build function that require only a single parameter -- sample -- to
-    # enable parallel processing if requested.
-    if loo:
-        f = partial(_cli_loo_runner, source_category=source_category_column,
-                    alpha1=alpha1, alpha2=alpha2, beta=beta,
-                    restarts=restarts, draws_per_restart=draws_per_restart,
-                    burnin=burnin, delay=delay,
-                    sample_metadata=sample_metadata,
-                    sources_data=sources_data, sources_envs=sources_envs,
-                    biom_table=biom_table, output_dir=output_dir)
-        sample_iter = source_samples
+    # Prepare to rarify sink data if we are not doing LOO. If we are doing loo,
+    # we skip the rarefaction, and set sinks to `None`.
+    if not loo:
+        sinks = feature_table.loc[sink_samples, :]
+        if sink_rarefaction_depth > 0:
+            d = (sinks.sum(1) >= sink_rarefaction_depth)
+            if not d.all():
+                count_too_shallow = (~d).sum()
+                shallowest = sinks.sum(1).min()
+                raise ValueError(('You requested rarefaction of sink samples '
+                                  'at %s, but there are %s sink samples that '
+                                  'have less sequences than that. The '
+                                  'shallowest of these is %s sequences.') %
+                                 (sink_rarefaction_depth, count_too_shallow,
+                                  shallowest))
+            else:
+                sinks = subsample_dataframe(sinks, sink_rarefaction_depth)
     else:
-        f = partial(_cli_sink_source_prediction_runner, alpha1=alpha1,
-                    alpha2=alpha2, beta=beta, restarts=restarts,
-                    draws_per_restart=draws_per_restart, burnin=burnin,
-                    delay=delay, sources_data=sources_data,
-                    biom_table=biom_table, output_dir=output_dir)
-        sample_iter = sink_samples
+        sinks = None
 
+    # If we've been asked to do multiple jobs, we need to spin up a cluster.
     if jobs > 1:
         # Launch the ipcluster and wait for it to come up.
         subprocess.Popen('ipcluster start -n %s --quiet' % jobs, shell=True)
         time.sleep(cluster_start_delay)
-        c = Client()
-        c[:].map(f, sample_iter, block=True)
-        # Shut the cluster down. Answer taken from SO:
-        # http://stackoverflow.com/questions/30930157/stopping-ipcluster-engines-ipython-parallel
-        c.shutdown(hub=True)
+        cluster = Client()
     else:
-        for sample in sample_iter:
-            f(sample)
+        cluster = None
 
-    # Format results for output.
-    samples = []
-    samples_data = []
-    for sample_fp in glob.glob(os.path.join(output_dir, '*')):
-        samples.append(sample_fp.strip().split('/')[-1].split('.txt')[0])
-        samples_data.append(np.loadtxt(sample_fp, delimiter='\t'))
-    mp, mps = _cli_collate_results(samples, samples_data, sources_envs)
+    # Run the computations.
+    mpm, mps, fas = gibbs(csources, sinks, alpha1, alpha2, beta, restarts,
+                          draws_per_restart, burnin, delay, cluster=cluster,
+                          create_feature_tables=per_sink_feature_assignments)
 
-    o = open(os.path.join(output_dir, 'mixing_proportions.txt'), 'w')
-    o.writelines(mp)
-    o.close()
-    o = open(os.path.join(output_dir, 'mixing_proportions_stds.txt'), 'w')
-    o.writelines(mps)
-    o.close()
+    # If we started a cluster, shut it down.
+    if jobs > 1:
+        cluster.shutdown(hub=True)
+
+    # Write results.
+    mpm.to_csv(os.path.join(output_dir, 'mixing_proportions.txt'), sep='\t')
+    mps.to_csv(os.path.join(output_dir, 'mixing_proportions_stds.txt'),
+               sep='\t')
+    if per_sink_feature_assignments:
+        for sink, fa in zip(mpm.index, fas):
+            fa.to_csv(os.path.join(output_dir, sink + '.feature_table.txt'),
+                      sep='\t')
+
+    # Plot contributions.
+    fig, ax = plot_heatmap(mpm)
+    fig.savefig(os.path.join(output_dir, 'mixing_proportions.pdf'), dpi=300)

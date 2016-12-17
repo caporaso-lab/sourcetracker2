@@ -69,3 +69,4 @@ target/
 # example output
 data/tiny-test/mixing_proportions
 data/tiny-test/source_loo
+data/tiny-test/example*

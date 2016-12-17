@@ -2,6 +2,15 @@
 
 ## 2.0.1-dev (changes since 2.0.1 go here)
 
+ * A unified API for sourcetracking with Gibbs sampling, including
+   leave-one-out cross-validation, has been created and is accessible as
+   ``sourcetracker.gibbs``.
+ * Heatmap plotting of mixing proportion means has been added to the output of
+   the command line interface, and to the public API as ``sourcetracker.gibbs.plot_heatmap``.
+ * The per-sink feature assignments are recorded for every run and written to
+   the output directory. They are named as ``X.contingency.txt`` where ``X``
+   is the name of a sink.
+
 ## 2.0.1
 
   * Initial alpha release.
