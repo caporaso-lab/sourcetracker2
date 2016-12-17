@@ -84,10 +84,6 @@ from sourcetracker._util import parse_sample_metadata, biom_to_df
               type=click.INT, show_default=True,
               help=('Number of times to sample the state of the Markov chain '
                     'for each independent chain grown.'))
-@click.option('--sample_with_replacement', required=False,
-              type=click.BOOL, show_default=True,
-              help('Sample with replacement instead of'
-                   'sample without replacement'))
 @click.option('--burnin', required=False, default=100,
               type=click.INT, show_default=True,
               help=('Number of passes (withdarawal and reassignment of every '
@@ -134,11 +130,16 @@ from sourcetracker._util import parse_sample_metadata, biom_to_df
               type=click.STRING, show_default=True,
               help=('Sample metadata column indicating the type of each '
                     'source sample.'))
+@click.option('--sample_with_replacement', required=False,
+              type=click.BOOL, show_default=True,
+              help('Sample with replacement instead of'
+                   'sample without replacement'))
 def gibbs_cli(table_fp, mapping_fp, output_dir, loo, jobs, alpha1, alpha2,
               beta, source_rarefaction_depth, sink_rarefaction_depth, restarts,
               draws_per_restart, burnin, delay, cluster_start_delay,
               per_sink_feature_assignments, source_sink_column,
-              source_column_value, sink_column_value, source_category_column):
+              source_column_value, sink_column_value, source_category_column,
+              sample_with_replacement):
     '''Gibb's sampler for Bayesian estimation of microbial sample sources.
 
     For details, see the project README file.
@@ -193,7 +194,8 @@ def gibbs_cli(table_fp, mapping_fp, output_dir, loo, jobs, alpha1, alpha2,
                              (source_rarefaction_depth, count_too_shallow,
                               shallowest))
         else:
-            csources = subsample_dataframe(csources, source_rarefaction_depth)
+            csources = subsample_dataframe(csources, source_rarefaction_depth,
+                                           replace=sample_with_replacement)
 
     # Prepare to rarify sink data if we are not doing LOO. If we are doing loo,
     # we skip the rarefaction, and set sinks to `None`.
@@ -211,7 +213,8 @@ def gibbs_cli(table_fp, mapping_fp, output_dir, loo, jobs, alpha1, alpha2,
                                  (sink_rarefaction_depth, count_too_shallow,
                                   shallowest))
             else:
-                sinks = subsample_dataframe(sinks, sink_rarefaction_depth)
+                sinks = subsample_dataframe(sinks, sink_rarefaction_depth,
+                                            replace=sample_with_replacement)
     else:
         sinks = None
 
