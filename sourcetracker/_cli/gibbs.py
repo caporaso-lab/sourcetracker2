@@ -83,6 +83,10 @@ from ipyparallel import Client
               type=click.INT, show_default=True,
               help=('Number of times to sample the state of the Markov chain '
                     'for each independent chain grown.'))
+@click.option('--sample_with_replacement', required=False,
+              type=click.BOOL, show_default=True,
+              help('Sample with replacement instead of'
+                   'sample without replacement'))
 @click.option('--burnin', required=False, default=100,
               type=click.INT, show_default=True,
               help=('Number of passes (withdarawal and reassignment of every '
@@ -123,7 +127,8 @@ from ipyparallel import Client
                     'source sample.'))
 def gibbs(table_fp, mapping_fp, output_dir, loo, jobs, alpha1, alpha2, beta,
           source_rarefaction_depth, sink_rarefaction_depth,
-          restarts, draws_per_restart, burnin, delay, cluster_start_delay,
+          restarts, draws_per_restart, sample_with_replacement,
+          burnin, delay, cluster_start_delay,
           source_sink_column, source_column_value, sink_column_value,
           source_category_column):
     '''Gibb's sampler for Bayesian estimation of microbial sample sources.
@@ -160,7 +165,8 @@ def gibbs(table_fp, mapping_fp, output_dir, loo, jobs, alpha1, alpha2, beta,
     # sources and sinks.
     source_samples, sink_samples = sinks_and_sources(
         sample_metadata, column_header=source_sink_column,
-        source_value=source_column_value, sink_value=sink_column_value)
+        source_value=source_column_value, sink_value=sink_column_value,
+        replace=sample_with_replacement)
 
     # If we have no source samples neither normal operation or loo will work.
     # Will also likely get strange errors.

@@ -240,6 +240,97 @@ class TestPreparationFunctions(TestCase):
                                       np.array([49]*2))
         np.testing.assert_array_equal(obs_rsd, sources_data)
 
+    def test_subsample_sources_sinks_without_replacement(self):
+        sources_data = np.array([[5, 100, 3, 0, 0, 1, 9],
+                                 [2, 20, 1, 0, 0, 0, 98],
+                                 [1000, 0, 0, 0, 0, 0, 0]])
+        sinks_data = np.array([[200, 0, 11, 400, 0, 0, 0],
+                               [0, 0, 0, 0, 0, 0, 50]])
+        sinks = np.array(['sink1', 'sink2'])
+        sources = np.array(['source1', 'source2', 'source3'])
+        # The table is composed of the 3 sources and 2 sinks. We concatenate
+        # the sink and source data together to create this table
+        feature_table = Table(np.vstack((sources_data, sinks_data)).T,
+                              ['o%s' % i for i in range(7)],
+                              np.hstack((sources, sinks)))
+
+        # Test that errors are thrown appropriately.
+        sources_depth = 1001
+        sinks_depth = 0
+        self.assertRaises(ValueError, subsample_sources_sinks, sources_data,
+                          sinks, feature_table, sources_depth, sinks_depth)
+        sources_depth = 100
+        sinks_depth = 51
+        self.assertRaises(ValueError, subsample_sources_sinks, sources_data,
+                          sinks, feature_table, sources_depth, sinks_depth)
+
+        # Test when no rarefaction would occur.
+        sources_depth = 0
+        sinks_depth = 0
+        obs_rsd, obs_rft = subsample_sources_sinks(sources_data, sinks,
+                                                   feature_table,
+                                                   sources_depth, sinks_depth,
+                                                   replace=True)
+        np.testing.assert_array_equal(obs_rsd, sources_data)
+        self.assertEqual(obs_rft, feature_table)
+
+        # Test with only sources rarefaction.
+        # This won't work since cython is generating the PRNG calls, instead,
+        # we can settle for less - ensure that the sums are correct.
+        # np.random.seed(0)
+        # sources_depth = 100
+        # sinks_depth = 0
+        # obs_rsd, obs_rft = subsample_sources_sinks(sources_data, sinks,
+        #                                            feature_table,
+        #                                            sources_depth,
+        #                                            sinks_depth)
+        # exp_rsd = np.array([[5., 84., 2., 0., 0., 1., 8.],
+        #                     [1., 16., 1., 0., 0., 0., 82.],
+        #                     [100., 0., 0., 0., 0., 0., 0.]])
+        # np.testing.assert_array_equal(obs_rsd, sources_data)
+        # self.assertEqual(obs_rft, feature_table)
+        sources_depth = 100
+        sinks_depth = 0
+        obs_rsd, obs_rft = subsample_sources_sinks(sources_data, sinks,
+                                                   feature_table,
+                                                   sources_depth, sinks_depth,
+                                                   replace=True)
+        np.testing.assert_array_equal(obs_rsd.sum(1), np.array([100]*3))
+        self.assertEqual(obs_rft, feature_table)
+
+        # Test with only sinks rarefaction.
+        # This won't work since cython is generating the PRNG calls, instead,
+        # we can settle for less - ensure that the sums are correct.
+        # np.random.seed(0)
+        # sources_depth = 0
+        # sinks_depth = 49
+        # obs_rsd, obs_rft = subsample_sources_sinks(sources_data, sinks,
+        #                                            feature_table,
+        #                                            sources_depth,
+        #                                            sinks_depth)
+        # exp_rft_array = np.array([[5., 2., 1000.,  11., 0.],
+        #                          [100., 20., 0., 0., 0.],
+        #                          [3., 1., 0., 3., 0.],
+        #                          [0., 0., 0., 35., 0.],
+        #                          [0., 0., 0., 0., 0.],
+        #                          [1., 0., 0., 0., 0.],
+        #                          [9., 98., 0., 0., 49.]])
+        # exp_rft_oids = feature_table.ids(axis='observation')
+        # exp_rft_sids = feature_table.ids(axis='sample')
+        # exp_rft = Table(exp_rft_array, exp_rft_oids, exp_rft_sids)
+        # np.testing.assert_array_equal(obs_rsd, sources_data)
+        # self.assertEqual(obs_rft, exp_rft)
+        sources_depth = 0
+        sinks_depth = 49
+        obs_rsd, obs_rft = subsample_sources_sinks(sources_data, sinks,
+                                                   feature_table,
+                                                   sources_depth, sinks_depth,
+                                                   replace=True)
+        fft = obs_rft.filter(sinks, inplace=False)
+        np.testing.assert_array_equal(fft._data.toarray().sum(0),
+                                      np.array([49]*2))
+        np.testing.assert_array_equal(obs_rsd, sources_data)
+
 
 class TestCLIFunctions(TestCase):
     '''Tests for the functions which convert command line options.'''

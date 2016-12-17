@@ -129,7 +129,7 @@ def collapse_sources(samples, sample_metadata, category, biom_table,
 
 
 def subsample_sources_sinks(sources_data, sinks, feature_table, sources_depth,
-                            sinks_depth):
+                            sinks_depth, replace=False):
     '''Rarify data for sources and sinks.
 
     Notes
@@ -153,6 +153,9 @@ def subsample_sources_sinks(sources_data, sinks, feature_table, sources_depth,
     sinks_depth : int
         Depth at which to subsample each sink. If 0, no rarefaction will be
         performed.
+    replace : bool, optional
+        If ``True``, subsample with replacement. If ``False`` (the default),
+        subsample without replacement.
 
     Returns
     -------
@@ -181,7 +184,7 @@ def subsample_sources_sinks(sources_data, sinks, feature_table, sources_depth,
         rsd = np.empty(sources_data.shape, dtype=np.float64)
         for row in range(sources_data.shape[0]):
             rsd[row] = subsample_counts(sources_data[row], sources_depth,
-                                        replace=False)
+                                        replace=replace)
     # Rarify sinks data in the biom table.
     if sinks_depth == 0:
         rft = feature_table
@@ -193,7 +196,7 @@ def subsample_sources_sinks(sources_data, sinks, feature_table, sources_depth,
         def _rfx(data, sid, md):
             if sid in sinks:
                 return subsample_counts(data.astype(np.int64), sinks_depth,
-                                        replace=False)
+                                        replace=replace)
             else:
                 return data
         rft = feature_table.transform(_rfx, axis='sample', inplace=False)
