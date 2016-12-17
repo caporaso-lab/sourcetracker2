@@ -114,6 +114,10 @@ from sourcetracker._util import parse_sample_metadata, biom_to_df
                     'sequences that contributed to a sink from a given '
                     'source. This option can be memory intensive if there are '
                     'a large number of features.'))
+@click.option('--sample_with_replacement', required=False,
+              default=False, show_default=True, is_flag=True,
+              help=('Sample with replacement instead of '
+                    'sample without replacement'))
 @click.option('--source_sink_column', required=False, default='SourceSink',
               type=click.STRING, show_default=True,
               help=('Sample metadata column indicating which samples should be'
@@ -130,16 +134,12 @@ from sourcetracker._util import parse_sample_metadata, biom_to_df
               type=click.STRING, show_default=True,
               help=('Sample metadata column indicating the type of each '
                     'source sample.'))
-@click.option('--sample_with_replacement', required=False,
-              type=click.BOOL, show_default=True, is_flag=True,
-              help('Sample with replacement instead of'
-                   'sample without replacement'))
 def gibbs_cli(table_fp, mapping_fp, output_dir, loo, jobs, alpha1, alpha2,
               beta, source_rarefaction_depth, sink_rarefaction_depth, restarts,
               draws_per_restart, burnin, delay, cluster_start_delay,
-              per_sink_feature_assignments, source_sink_column,
-              source_column_value, sink_column_value, source_category_column,
-              sample_with_replacement):
+              per_sink_feature_assignments, sample_with_replacement,
+              source_sink_column, source_column_value,
+              sink_column_value, source_category_column):
     '''Gibb's sampler for Bayesian estimation of microbial sample sources.
 
     For details, see the project README file.
