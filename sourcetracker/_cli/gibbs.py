@@ -131,7 +131,7 @@ from sourcetracker._util import parse_sample_metadata, biom_to_df
               help=('Sample metadata column indicating the type of each '
                     'source sample.'))
 @click.option('--sample_with_replacement', required=False,
-              type=click.BOOL, show_default=True,
+              type=click.BOOL, show_default=True, is_flag=True,
               help('Sample with replacement instead of'
                    'sample without replacement'))
 def gibbs_cli(table_fp, mapping_fp, output_dir, loo, jobs, alpha1, alpha2,
