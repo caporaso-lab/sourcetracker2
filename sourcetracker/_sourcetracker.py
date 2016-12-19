@@ -1027,3 +1027,90 @@ def plot_heatmap(mpm, cm=plt.cm.viridis, xlabel='Sources', ylabel='Sinks',
     ax.set_ylabel(ylabel)
     ax.set_title(title)
     return fig, ax
+
+###############################################################################
+# Alternative Mixing Proportion Methods
+###############################################################################
+
+
+def method5(sources, sinks):
+    '''Returns mixing proportions using only feature in source probability
+
+    Summary
+    -------
+    Calculates percent probability of each source contributing to the sink
+    based solely on likelihood of seeing a given feature in a given source
+    environment. Unlike gibbs(), no Unknown source environemnt is created.
+
+    Notes
+    -----
+    Input validation is done on the sources and sinks. They must
+    be dataframes with integerial data and their columns must match exactly.
+
+    Warnings
+    --------
+    This function does _not_ perform rarefaction, the user should perform
+    rarefaction prior to calling this function.
+
+    This function does not collapse sources or sinks, it expects each row of
+    the `sources` dataframe to represent a unique source, and each row of the
+    `sinks` dataframe to represent a unique sink.
+
+    Parameters
+    ----------
+    sources : pd.DataFrame
+        DataFrame of sources x features (rows x columns)
+    sinks : pd.DataFrame
+        DataFrame of sinks x features (rows x columns)
+
+    Returns
+    -------
+    results : pd.DataFrame
+        Dataframe of sinks x sources (rows x columns) of the contribution of
+        each source to each sink
+
+    Examples:
+    ---------
+    # Method5 works by assigning each sink's sequence counts to a source
+    # based solely on the probability of seeing that feature in a source.
+    # source table is source x features (rows x columns)
+    sources = pd.DataFrame([[1, 2, 3, 4], [4, 2, 1, 3]],
+                           index=['source1', 'source2'],
+                           columns=['f1', 'f2', 'f3', 'f4'])
+    sinks = pd.DataFrame([[3, 3, 3, 1]], index=['sink1'],
+                         columns=['f1', 'f2', 'f3', 'f4'])
+
+    # Calculate probability of seeing each feature in a source by dividing
+    # each source count by the total sum of that source
+    sources_scaled = [[0.1, 0.2, 0.3, 0.4],
+                      [0.4, 0.2, 0.1, 0.3]]
+
+    # Multiple the sink's sequence counts by the sources_scaled probability
+    sources_scaled_counts = [[0.3, 0.6, 0.9, 0.4],
+                             [1.2, 0.6, 0.3, 0.3]]
+
+    # sum up the total sequence contributions across all sources, and then
+    # recalculate how much sequence contribution each source provided
+    source_contributions = [0.478261, 0.512739]
+    '''
+    # check input DataFrames
+    sources_ok, sinks_ok = validate_gibbs_input(sources, sinks)
+
+    # Calculate probability of seeing each feature in a given source
+    sources_scaled = sources_ok.div(sources_ok.sum(axis=1), axis=0)
+
+    # Create results container
+    results = pd.DataFrame(np.zeros((len(sinks_ok.index),
+                                     len(sources_ok.index))),
+                           index=sinks_ok.index, columns=sources_ok.index)
+
+    for sink_id, sink_values in sinks_ok.iterrows():
+
+        # Multiply sinks counts by prob of seeing that feature in each source
+        sources_scaled_counts = sources_scaled * sink_values
+
+        # Add up a sources seq count contributions, and rescale
+        table_sum = sources_scaled_counts.values.sum()
+        results.loc[sink_id] = sources_scaled_counts.sum(axis=1) / table_sum
+
+    return results

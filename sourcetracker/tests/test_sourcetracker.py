@@ -26,7 +26,8 @@ from sourcetracker._sourcetracker import (intersect_and_sort_samples,
                                           single_sink_feature_table,
                                           ConditionalProbability,
                                           gibbs_sampler, gibbs,
-                                          plot_heatmap)
+                                          plot_heatmap,
+                                          method5)
 
 
 class TestValidateGibbsInput(TestCase):
@@ -1256,6 +1257,26 @@ class PlotHeatmapTests(TestCase):
         fig, ax = plot_heatmap(self.mpm, cm=plt.cm.jet,
                                xlabel='Other 1', ylabel='Other 2',
                                title='Other 3')
+
+
+class Method5Tests(TestCase):
+    '''Unit tests for method5'''
+
+    def test_method5(self):
+        sources = pd.DataFrame([[1, 2, 3, 4], [4, 2, 1, 3]],
+                               index=['source1', 'source2'],
+                               columns=['f1', 'f2', 'f3', 'f4'])
+        sinks = pd.DataFrame([[3, 3, 3, 1], [5, 0, 0, 5]],
+                             index=['sink1', 'sink2'],
+                             columns=['f1', 'f2', 'f3', 'f4'])
+
+        obs_result = method5(sources, sinks)
+        exp_result = pd.DataFrame([[0.47826087, 0.52173913],
+                                  [0.41666667, 0.58333333]],
+                                  index=['sink1', 'sink2'],
+                                  columns=['source1', 'source2'])
+
+        pd.util.testing.assert_frame_equal(obs_result, exp_result)
 
 if __name__ == '__main__':
     main()
