@@ -26,7 +26,8 @@ from sourcetracker._sourcetracker import (intersect_and_sort_samples,
                                           single_sink_feature_table,
                                           ConditionalProbability,
                                           gibbs_sampler, gibbs,
-                                          plot_heatmap)
+                                          plot_heatmap,
+                                          method5, _converged)
 
 
 class TestValidateGibbsInput(TestCase):
@@ -1236,6 +1237,57 @@ class TestGibbs(TestCase):
         np.testing.assert_allclose(obs_mpm.values, exp_mpm.values, atol=.01)
 
 
+class AutoConvergenceTests(TestCase):
+
+    def setUp(self):
+        pass
+
+    def test_convergence_correctly_calculated(self):
+        envcounts = np.array([[100, 150, 600, 300, 30, 5],
+                              [110, 140, 500, 400, 30, 8],
+                              [90, 160, 550, 330, 50, 13],
+                              [105, 145, 575, 355, 0, 9]])
+
+        draw = 3
+        idx = 3
+        tolerance = .2
+        radius = 2
+        min_sum = 10
+        exp = True
+        obs = _converged(envcounts, draw, idx, tolerance, radius, min_sum)
+        self.assertEqual(obs, exp)
+
+        draw = 3
+        idx = 3
+        tolerance = .2
+        radius = 2
+        min_sum = 9
+        exp = False
+        obs = _converged(envcounts, draw, idx, tolerance, radius, min_sum)
+        self.assertEqual(obs, exp)
+
+        draw = 3
+        idx = 3
+        tolerance = .2
+        radius = 4
+        min_sum = 10
+        exp = False
+        obs = _converged(envcounts, draw, idx, tolerance, radius, min_sum)
+        self.assertEqual(obs, exp)
+
+        draw = 3
+        idx = 3
+        tolerance = .2
+        radius = 4
+        min_sum = 600
+        exp = False
+        obs = _converged(envcounts, draw, idx, tolerance, radius, min_sum)
+        self.assertEqual(obs, exp)
+
+    def test_gibbs_sampler_autoconvergence_when_seeded(self):
+        np.random.seed(298249340)
+
+
 class PlotHeatmapTests(TestCase):
 
     def setUp(self):
@@ -1256,6 +1308,26 @@ class PlotHeatmapTests(TestCase):
         fig, ax = plot_heatmap(self.mpm, cm=plt.cm.jet,
                                xlabel='Other 1', ylabel='Other 2',
                                title='Other 3')
+
+
+class Method5Tests(TestCase):
+    '''Unit tests for method5'''
+
+    def test_method5(self):
+        sources = pd.DataFrame([[1, 2, 3, 4], [4, 2, 1, 3]],
+                               index=['source1', 'source2'],
+                               columns=['f1', 'f2', 'f3', 'f4'])
+        sinks = pd.DataFrame([[3, 3, 3, 1], [5, 0, 0, 5]],
+                             index=['sink1', 'sink2'],
+                             columns=['f1', 'f2', 'f3', 'f4'])
+
+        obs_result = method5(sources, sinks)
+        exp_result = pd.DataFrame([[0.47826087, 0.52173913],
+                                  [0.41666667, 0.58333333]],
+                                  index=['sink1', 'sink2'],
+                                  columns=['source1', 'source2'])
+
+        pd.util.testing.assert_frame_equal(obs_result, exp_result)
 
 if __name__ == '__main__':
     main()
