@@ -8,9 +8,6 @@
 # The full license is in the file LICENSE, distributed with this software.
 # ----------------------------------------------------------------------------
 
-import matplotlib
-matplotlib.use('Agg')  # noqa: E402
-
 import seaborn as sns
 import matplotlib.pyplot as plt
 
