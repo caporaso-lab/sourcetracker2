@@ -25,8 +25,8 @@ from sourcetracker._sourcetracker import (intersect_and_sort_samples,
                                           cumulative_proportions,
                                           single_sink_feature_table,
                                           ConditionalProbability,
-                                          gibbs_sampler, gibbs,
-                                          plot_heatmap)
+                                          gibbs_sampler, gibbs)
+from sourcetracker._plot import plot_heatmap
 
 
 class TestValidateGibbsInput(TestCase):
@@ -1256,6 +1256,7 @@ class PlotHeatmapTests(TestCase):
         fig, ax = plot_heatmap(self.mpm, cm=plt.cm.jet,
                                xlabel='Other 1', ylabel='Other 2',
                                title='Other 3')
+
 
 if __name__ == '__main__':
     main()
