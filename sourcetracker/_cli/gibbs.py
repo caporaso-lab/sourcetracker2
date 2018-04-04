@@ -22,9 +22,10 @@ from sourcetracker._cli import cli
 from sourcetracker._sourcetracker import (gibbs, intersect_and_sort_samples,
                                           get_samples, collapse_source_data,
                                           subsample_dataframe,
-                                          validate_gibbs_input, plot_heatmap)
+                                          validate_gibbs_input)
 
 from sourcetracker._util import parse_sample_metadata, biom_to_df
+from sourcetracker._plot import plot_heatmap
 
 
 @cli.command(name='gibbs')
