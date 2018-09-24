@@ -231,8 +231,9 @@ def subsample_dataframe(df, depth, replace=False):
     pd.DataFrame
         Subsampled dataframe.
     '''
-    f = partial(subsample_counts, n=depth, replace=replace)
-    return df.apply(f, axis=1, reduce=False, raw=False)
+    def subsample(x):
+        return pd.Series(subsample_counts(x.values, depth), index=x.index)
+    return df.apply(subsample, axis=1)
 
 
 def generate_environment_assignments(n, num_sources):
