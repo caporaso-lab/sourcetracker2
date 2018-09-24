@@ -232,7 +232,8 @@ def subsample_dataframe(df, depth, replace=False):
         Subsampled dataframe.
     '''
     def subsample(x):
-        return pd.Series(subsample_counts(x.values, depth), index=x.index)
+        return pd.Series(subsample_counts(x.values, depth, replace=replace),
+                         index=x.index)
     return df.apply(subsample, axis=1)
 
 
