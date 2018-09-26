@@ -2,6 +2,7 @@
 
 ## 2.0.1-dev (changes since 2.0.1 go here)
 
+ * Updated subsample function to be compatible with new version of pandas
  * A unified API for sourcetracking with Gibbs sampling, including
    leave-one-out cross-validation, has been created and is accessible as
    ``sourcetracker.gibbs``.
