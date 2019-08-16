@@ -114,8 +114,8 @@ To install SourceTracker 2 using Anaconda, run the following commands:
 
 ```bash
 conda create -n st2 -c biocore python=3.5 numpy scipy scikit-bio biom-format h5py hdf5 seaborn
-source activate st2
-pip install sourcetracker
+conda activate st2
+pip install https://github.com/biota/sourcetracker2/archive/master.zip
 ```
 
 To test that your installation was successful, try the following command:
