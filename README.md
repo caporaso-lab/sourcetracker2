@@ -126,7 +126,6 @@ you can install it directly from the github repository.
 pip install https://github.com/biota/sourcetracker2/archive/master.zip
 ```
 
-
 To test that your installation was successful, try the following command:
 
 ```bash
