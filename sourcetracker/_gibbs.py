@@ -116,4 +116,4 @@ def gibbs_helper(table_fp,
     mpm, mps, fas = gibbs(csources, sinks, alpha1, alpha2, beta, restarts,
                           draws_per_restart, burnin, delay, jobs,
                           create_feature_tables=per_sink_feature_assignments)
-    return  mpm, mps, fas, per_sink_feature_assignments
+    return  mpm, mps, fas

@@ -139,14 +139,13 @@ def gibbs_cli(table_fp, mapping_fp, output_dir, loo, jobs, alpha1, alpha2,
     os.mkdir(output_dir)
 
     # run the gibbs sampler helper function (same used for q2)
-    results =  gibbs_helper(table_fp, mapping_fp, loo, jobs,
-                            alpha1, alpha2, beta, source_rarefaction_depth,
-                            sink_rarefaction_depth, restarts, draws_per_restart,
-                            burnin, delay, per_sink_feature_assignments, 
-                            sample_with_replacement, source_sink_column,
-                            source_column_value, sink_column_value,
-                            source_category_column)
-    mpm, mps, fas, per_sink_feature_assignments = results
+    mpm, mps, fas =  gibbs_helper(table_fp, mapping_fp, loo, jobs,
+                                  alpha1, alpha2, beta, source_rarefaction_depth,
+                                  sink_rarefaction_depth, restarts, draws_per_restart,
+                                  burnin, delay, per_sink_feature_assignments, 
+                                  sample_with_replacement, source_sink_column,
+                                  source_column_value, sink_column_value,
+                                  source_category_column)
 
     # Write results.
     mpm.to_csv(os.path.join(output_dir, 'mixing_proportions.txt'), sep='\t')
