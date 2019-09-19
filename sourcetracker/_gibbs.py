@@ -1,0 +1,119 @@
+#!/usr/bin/env python
+# ----------------------------------------------------------------------------
+# Copyright (c) 2016--, Biota Technology.
+# www.biota.com
+#
+# Distributed under the terms of the Modified BSD License.
+#
+# The full license is in the file LICENSE, distributed with this software.
+# ----------------------------------------------------------------------------
+
+from __future__ import division
+
+import os
+from biom import load_table
+from sourcetracker._sourcetracker import (gibbs, intersect_and_sort_samples,
+                                          get_samples, collapse_source_data,
+                                          subsample_dataframe,
+                                          validate_gibbs_input)
+from sourcetracker._util import parse_sample_metadata, biom_to_df
+
+def gibbs_helper(table_fp,
+                 mapping_fp,
+                 loo,
+                 jobs,
+                 alpha1,
+                 alpha2,
+                 beta,
+                 source_rarefaction_depth,
+                 sink_rarefaction_depth,
+                 restarts,
+                 draws_per_restart,
+                 burnin,
+                 delay,
+                 per_sink_feature_assignments,
+                 sample_with_replacement,
+                 source_sink_column,
+                 source_column_value,
+                 sink_column_value,
+                 source_category_column):
+    '''Gibb's sampler for Bayesian estimation of microbial sample sources.
+
+    For details, see the project README file.
+    '''
+
+    # Load the metadata file and feature table.
+    sample_metadata = parse_sample_metadata(open(mapping_fp, 'U'))
+    feature_table = biom_to_df(load_table(table_fp))
+
+    # Do high level check on feature data.
+    feature_table = validate_gibbs_input(feature_table)
+
+    # Remove samples not shared by both feature and metadata tables and order
+    # rows equivalently.
+    sample_metadata, feature_table = \
+        intersect_and_sort_samples(sample_metadata, feature_table)
+
+    # Identify source and sink samples.
+    source_samples = get_samples(sample_metadata, source_sink_column,
+                                 source_column_value)
+    sink_samples = get_samples(sample_metadata, source_sink_column,
+                               sink_column_value)
+
+    # If we have no source samples neither normal operation or loo will work.
+    # Will also likely get strange errors.
+    if len(source_samples) == 0:
+        raise ValueError(('You passed %s as the `source_sink_column` and %s '
+                          'as the `source_column_value`. There are no samples '
+                          'which are sources under these values. Please see '
+                          'the help documentation and check your mapping '
+                          'file.') % (source_sink_column, source_column_value))
+
+    # Prepare the 'sources' matrix by collapsing the `source_samples` by their
+    # metadata values.
+    csources = collapse_source_data(sample_metadata, feature_table,
+                                    source_samples, source_category_column,
+                                    'mean')
+
+    # Rarify collapsed source data if requested.
+    if source_rarefaction_depth > 0:
+        d = (csources.sum(1) >= source_rarefaction_depth)
+        if not d.all():
+            count_too_shallow = (~d).sum()
+            shallowest = csources.sum(1).min()
+            raise ValueError(('You requested rarefaction of source samples at '
+                              '%s, but there are %s collapsed source samples '
+                              'that have less sequences than that. The '
+                              'shallowest of these is %s sequences.') %
+                             (source_rarefaction_depth, count_too_shallow,
+                              shallowest))
+        else:
+            csources = subsample_dataframe(csources, source_rarefaction_depth,
+                                           replace=sample_with_replacement)
+
+    # Prepare to rarify sink data if we are not doing LOO. If we are doing loo,
+    # we skip the rarefaction, and set sinks to `None`.
+    if not loo:
+        sinks = feature_table.loc[sink_samples, :]
+        if sink_rarefaction_depth > 0:
+            d = (sinks.sum(1) >= sink_rarefaction_depth)
+            if not d.all():
+                count_too_shallow = (~d).sum()
+                shallowest = sinks.sum(1).min()
+                raise ValueError(('You requested rarefaction of sink samples '
+                                  'at %s, but there are %s sink samples that '
+                                  'have less sequences than that. The '
+                                  'shallowest of these is %s sequences.') %
+                                 (sink_rarefaction_depth, count_too_shallow,
+                                  shallowest))
+            else:
+                sinks = subsample_dataframe(sinks, sink_rarefaction_depth,
+                                            replace=sample_with_replacement)
+    else:
+        sinks = None
+
+    # Run the computations.
+    mpm, mps, fas = gibbs(csources, sinks, alpha1, alpha2, beta, restarts,
+                          draws_per_restart, burnin, delay, jobs,
+                          create_feature_tables=per_sink_feature_assignments)
+    return  mpm, mps, fas, per_sink_feature_assignments
