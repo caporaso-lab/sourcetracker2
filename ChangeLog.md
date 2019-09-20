@@ -13,6 +13,8 @@
 	is the name of a sink.
 
  * Sample with replacement functionality has been added
+ * Added QIIME2 plugin
+ * Added testing for the cli and QIIME2 plugin
 
 ## 2.0.1
 
