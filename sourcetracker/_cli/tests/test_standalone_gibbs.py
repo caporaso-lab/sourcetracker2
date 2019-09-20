@@ -86,7 +86,7 @@ class Test_standalone_gibbs(unittest.TestCase):
         """Checks the output produced by sourcetracker2's standalone script.
 
            This is more of an "integration test" than a unit test -- the
-           details of the algorithm used by the standalone CTF script are
+           details of the algorithm used by the standalone gibbs script are
            checked in more detail in sourctracker/tests.
         """
         crnt_dir = os.path.dirname(os.path.abspath(__file__))
