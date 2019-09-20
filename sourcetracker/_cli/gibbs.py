@@ -36,6 +36,7 @@ from sourcetracker._gibbs_defaults import (DEFAULT_ALPH1, DEFAULT_ALPH2,
                                            DEFAULT_SRS, DEFAULT_SRS2,
                                            DEFAULT_CAT)
 
+
 @cli.command(name='gibbs')
 @click.option('-i', '--table_fp', required=True,
               type=click.Path(exists=True, dir_okay=False, readable=True),
@@ -62,12 +63,24 @@ from sourcetracker._gibbs_defaults import (DEFAULT_ALPH1, DEFAULT_ALPH2,
 @click.option('--beta', required=False, default=DEFAULT_TEN,
               type=click.FLOAT, show_default=True,
               help=DESC_BTA)
-@click.option('--source_rarefaction_depth', required=False, default=DEFAULT_THOUS,
-              type=click.IntRange(min=0, max=None), show_default=True,
-              help=DESC_RAF1)
-@click.option('--sink_rarefaction_depth', required=False, default=DEFAULT_THOUS,
-              type=click.IntRange(min=0, max=None), show_default=True,
-              help=DESC_RAF2)
+@click.option(
+    '--source_rarefaction_depth',
+    required=False,
+    default=DEFAULT_THOUS,
+    type=click.IntRange(
+        min=0,
+        max=None),
+    show_default=True,
+    help=DESC_RAF1)
+@click.option(
+    '--sink_rarefaction_depth',
+    required=False,
+    default=DEFAULT_THOUS,
+    type=click.IntRange(
+        min=0,
+        max=None),
+    show_default=True,
+    help=DESC_RAF2)
 @click.option('--restarts', required=False, default=DEFAULT_TEN,
               type=click.INT, show_default=True,
               help=DESC_RST)
@@ -80,9 +93,13 @@ from sourcetracker._gibbs_defaults import (DEFAULT_ALPH1, DEFAULT_ALPH2,
 @click.option('--delay', required=False, default=DEFAULT_ONE,
               type=click.INT, show_default=True,
               help=DESC_DLY)
-@click.option('--per_sink_feature_assignments', required=False, default=DEFAULT_FLS,
-              is_flag=True, show_default=True,
-              help=DESC_PFA)
+@click.option(
+    '--per_sink_feature_assignments',
+    required=False,
+    default=DEFAULT_FLS,
+    is_flag=True,
+    show_default=True,
+    help=DESC_PFA)
 @click.option('--sample_with_replacement', required=False,
               default=DEFAULT_FLS, show_default=True, is_flag=True,
               help=DESC_RPL)
@@ -99,25 +116,25 @@ from sourcetracker._gibbs_defaults import (DEFAULT_ALPH1, DEFAULT_ALPH2,
               type=click.STRING, show_default=True,
               help=DESC_CAT)
 def gibbs(table_fp: Table,
-              mapping_fp: pd.DataFrame,
-              output_dir: str,
-              loo: bool,
-              jobs: int,
-              alpha1: float,
-              alpha2: float,
-              beta: float,
-              source_rarefaction_depth: int,
-              sink_rarefaction_depth: int,
-              restarts: int,
-              draws_per_restart: int,
-              burnin: int,
-              delay: int,
-              per_sink_feature_assignments: bool,
-              sample_with_replacement: bool,
-              source_sink_column: str,
-              source_column_value: str,
-              sink_column_value: str,
-              source_category_column: str):
+          mapping_fp: pd.DataFrame,
+          output_dir: str,
+          loo: bool,
+          jobs: int,
+          alpha1: float,
+          alpha2: float,
+          beta: float,
+          source_rarefaction_depth: int,
+          sink_rarefaction_depth: int,
+          restarts: int,
+          draws_per_restart: int,
+          burnin: int,
+          delay: int,
+          per_sink_feature_assignments: bool,
+          sample_with_replacement: bool,
+          source_sink_column: str,
+          source_column_value: str,
+          sink_column_value: str,
+          source_category_column: str):
     '''Gibb's sampler for Bayesian estimation of microbial sample sources.
 
     For details, see the project README file.
@@ -130,7 +147,7 @@ def gibbs(table_fp: Table,
     results = gibbs_helper(table_fp, mapping_fp, loo, jobs,
                            alpha1, alpha2, beta, source_rarefaction_depth,
                            sink_rarefaction_depth, restarts, draws_per_restart,
-                           burnin, delay, per_sink_feature_assignments, 
+                           burnin, delay, per_sink_feature_assignments,
                            sample_with_replacement, source_sink_column,
                            source_column_value, sink_column_value,
                            source_category_column)
@@ -143,7 +160,7 @@ def gibbs(table_fp: Table,
                       sep='\t')
     else:
         # get the results (without fas)
-        mpm, mps = results      
+        mpm, mps = results
 
     # Write results.
     mpm.to_csv(os.path.join(output_dir, 'mixing_proportions.txt'), sep='\t')
