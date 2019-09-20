@@ -248,4 +248,5 @@ class CompareSinksTests(unittest.TestCase):
         expected_values = [(0.4, 0.55, 0.15)]
         expected = pd.DataFrame(expected_values, index=expected_ids,
                                 columns=['Source1', 'Source2', 'Unknown'])
-        assert_data_frame_almost_equal(observed, expected)
+        assert_data_frame_almost_equal(observed.sort_index(axis=1),
+                                       expected.sort_index(axis=1))
