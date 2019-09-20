@@ -39,7 +39,8 @@ def gibbs_helper(table_fp,
                  source_category_column):
     '''Gibb's sampler for Bayesian estimation of microbial sample sources.
 
-    For details, see the project README file.
+    This function is a helper that applies to both the click and QIIME2
+    command line functionality.
     '''
 
     # Load the metadata file and feature table.
@@ -116,4 +117,7 @@ def gibbs_helper(table_fp,
     mpm, mps, fas = gibbs(csources, sinks, alpha1, alpha2, beta, restarts,
                           draws_per_restart, burnin, delay, jobs,
                           create_feature_tables=per_sink_feature_assignments)
-    return  mpm, mps, fas
+    if per_sink_feature_assignments:
+        return  mpm, mps, fas
+    else:
+        return  mpm, mps
