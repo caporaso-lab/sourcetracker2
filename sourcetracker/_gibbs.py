@@ -11,37 +11,48 @@
 from __future__ import division
 
 import pandas as pd
-from biom import load_table, Table
+from qiime2 import Metadata
+from biom import Table
 from sourcetracker._sourcetracker import (intersect_and_sort_samples,
                                           get_samples, collapse_source_data,
                                           subsample_dataframe,
                                           validate_gibbs_input)
 from sourcetracker._sourcetracker import gibbs as _gibbs
-from sourcetracker._util import parse_sample_metadata, biom_to_df
+from sourcetracker._util import biom_to_df
+# import default values
+from sourcetracker._gibbs_defaults import (DEFAULT_ALPH1, DEFAULT_ALPH2,
+                                           DEFAULT_TEN, DEFAULT_ONE,
+                                           DEFAULT_HUND, DEFAULT_THOUS,
+                                           DEFAULT_FLS, DEFAULT_SNK,
+                                           DEFAULT_SRS, DEFAULT_SRS2,
+                                           DEFAULT_CAT)
 
 
-def gibbs(table_fp: Table,
-          mapping_fp: pd.DataFrame,
-          loo: bool,
-          jobs: int,
-          alpha1: float,
-          alpha2: float,
-          beta: float,
-          source_rarefaction_depth: int,
-          sink_rarefaction_depth: int,
-          restarts: int,
-          draws_per_restart: int,
-          burnin: int,
-          delay: int,
-          per_sink_feature_assignments: bool,
-          sample_with_replacement: bool,
-          source_sink_column: str,
-          source_column_value: str,
-          sink_column_value: str,
-          source_category_column: str) -> (pd.DataFrame,
-                                           pd.DataFrame):
+def gibbs(feature_table: Table,
+          sample_metadata: Metadata,
+          loo: bool = DEFAULT_FLS,
+          jobs: int = DEFAULT_ONE,
+          alpha1: float = DEFAULT_ALPH1,
+          alpha2: float = DEFAULT_ALPH2,
+          beta: float = DEFAULT_TEN,
+          source_rarefaction_depth: int = DEFAULT_THOUS,
+          sink_rarefaction_depth: int = DEFAULT_THOUS,
+          restarts: int = DEFAULT_TEN,
+          draws_per_restart: int = DEFAULT_ONE,
+          burnin: int = DEFAULT_HUND,
+          delay: int = DEFAULT_ONE,
+          per_sink_feature_assignments: bool = DEFAULT_FLS,
+          sample_with_replacement: bool = DEFAULT_FLS,
+          source_sink_column: str = DEFAULT_SNK,
+          source_column_value: str = DEFAULT_SRS,
+          sink_column_value: str = DEFAULT_SRS2,
+          source_category_column: str = DEFAULT_CAT)\
+              -> (pd.DataFrame, pd.DataFrame):
+    # convert tables
+    feature_table = biom_to_df(feature_table)
+    sample_metadata = sample_metadata.to_dataframe()
     # run the gibbs sampler helper function (same used for q2)
-    results = gibbs_helper(table_fp, mapping_fp, loo, jobs,
+    results = gibbs_helper(feature_table, sample_metadata, loo, jobs,
                            alpha1, alpha2, beta, source_rarefaction_depth,
                            sink_rarefaction_depth, restarts, draws_per_restart,
                            burnin, delay, per_sink_feature_assignments,
@@ -62,8 +73,8 @@ def gibbs(table_fp: Table,
     return mpm, mps
 
 
-def gibbs_helper(table_fp: Table,
-                 mapping_fp: pd.DataFrame,
+def gibbs_helper(feature_table: Table,
+                 sample_metadata: pd.DataFrame,
                  loo: bool,
                  jobs: int,
                  alpha1: float,
@@ -88,10 +99,6 @@ def gibbs_helper(table_fp: Table,
     This function is a helper that applies to both the click and QIIME2
     command line functionality.
     '''
-
-    # Load the metadata file and feature table.
-    sample_metadata = parse_sample_metadata(open(mapping_fp, 'U'))
-    feature_table = biom_to_df(load_table(table_fp))
 
     # Do high level check on feature data.
     feature_table = validate_gibbs_input(feature_table)

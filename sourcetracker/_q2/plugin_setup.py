@@ -10,14 +10,15 @@
 
 import qiime2.plugin
 from sourcetracker import __version__
-from qiime2.plugin import (Properties, Int, Float,
-                           Metadata, Str, Bool, Choices)
+from qiime2.plugin import (Int, Float,
+                           Metadata, Str,
+                           Bool, Choices)
 from q2_types.feature_table import (FeatureTable, Frequency,
                                     RelativeFrequency)
 from sourcetracker._gibbs import gibbs
 
 # import default descriptions
-from sourcetracker._gibbs_defaults import (DESC_TBL, DESC_MAP, DESC_OUT,
+from sourcetracker._gibbs_defaults import (DESC_TBL, DESC_MAP,
                                            DESC_LOO, DESC_JBS, DESC_ALPH1,
                                            DESC_ALPH2, DESC_BTA, DESC_RAF1,
                                            DESC_RAF2, DESC_RST, DESC_DRW,
@@ -26,15 +27,7 @@ from sourcetracker._gibbs_defaults import (DESC_TBL, DESC_MAP, DESC_OUT,
                                            DESC_SRS2, DESC_CAT, OUT_MEAN,
                                            OUT_STD)
 
-# import default values
-from sourcetracker._gibbs_defaults import (DEFAULT_ALPH1, DEFAULT_ALPH2,
-                                           DEFAULT_TEN, DEFAULT_ONE,
-                                           DEFAULT_HUND, DEFAULT_THOUS,
-                                           DEFAULT_FLS, DEFAULT_SNK,
-                                           DEFAULT_SRS, DEFAULT_SRS2,
-                                           DEFAULT_CAT)
-
-PARAMETERS = {'mapping_fp': Metadata,
+PARAMETERS = {'sample_metadata': Metadata,
               'loo': Bool,
               'jobs': Int,
               'alpha1': Float,
@@ -52,7 +45,7 @@ PARAMETERS = {'mapping_fp': Metadata,
               'source_column_value': Str,
               'sink_column_value': Str,
               'source_category_column': Str}
-PARAMETERDESC = {'mapping_fp': DESC_MAP,
+PARAMETERDESC = {'sample_metadata': DESC_MAP,
                  'loo': DESC_LOO,
                  'jobs': DESC_JBS,
                  'alpha1': DESC_ALPH1,
@@ -85,11 +78,11 @@ plugin = qiime2.plugin.Plugin(
 
 plugin.methods.register_function(
     function=gibbs,
-    inputs={'table_fp': FeatureTable[Frequency]},
+    inputs={'feature_table': FeatureTable[Frequency]},
     parameters=PARAMETERS,
     outputs=[('mixing_proporitions', FeatureTable[RelativeFrequency]),
              ('mixing_proportion_stds', FeatureTable[RelativeFrequency])],
-    input_descriptions={'table_fp': DESC_TBL},
+    input_descriptions={'feature_table': DESC_TBL},
     parameter_descriptions=PARAMETERDESC,
     output_descriptions={'mixing_proporitions': OUT_MEAN,
                          'mixing_proportion_stds': OUT_STD},

@@ -13,11 +13,11 @@ from __future__ import division
 import os
 import click
 import pandas as pd
-from biom import load_table, Table
+from biom import Table, load_table
 from sourcetracker._cli import cli
 from sourcetracker._gibbs import gibbs_helper
-from sourcetracker._util import parse_sample_metadata, biom_to_df
 from sourcetracker._plot import plot_heatmap
+from sourcetracker._util import parse_sample_metadata, biom_to_df
 
 # import default descriptions
 from sourcetracker._gibbs_defaults import (DESC_TBL, DESC_MAP, DESC_OUT,
@@ -143,8 +143,12 @@ def gibbs(table_fp: Table,
     # failed if so.
     os.mkdir(output_dir)
 
+    # Load the metadata file and feature table.
+    sample_metadata = parse_sample_metadata(open(mapping_fp, 'U'))
+    feature_table = biom_to_df(load_table(table_fp))
+
     # run the gibbs sampler helper function (same used for q2)
-    results = gibbs_helper(table_fp, mapping_fp, loo, jobs,
+    results = gibbs_helper(feature_table, sample_metadata, loo, jobs,
                            alpha1, alpha2, beta, source_rarefaction_depth,
                            sink_rarefaction_depth, restarts, draws_per_restart,
                            burnin, delay, per_sink_feature_assignments,
