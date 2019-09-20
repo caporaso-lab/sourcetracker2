@@ -13,11 +13,53 @@ from __future__ import division
 import os
 import pandas as pd
 from biom import load_table, Table
-from sourcetracker._sourcetracker import (gibbs, intersect_and_sort_samples,
+from sourcetracker._sourcetracker import (intersect_and_sort_samples,
                                           get_samples, collapse_source_data,
                                           subsample_dataframe,
                                           validate_gibbs_input)
+from sourcetracker._sourcetracker import gibbs as _gibbs 
 from sourcetracker._util import parse_sample_metadata, biom_to_df
+
+def gibbs(table_fp: Table,
+                 mapping_fp: pd.DataFrame,
+                 loo: bool,
+                 jobs: int,
+                 alpha1: float,
+                 alpha2: float,
+                 beta: float,
+                 source_rarefaction_depth: int,
+                 sink_rarefaction_depth: int,
+                 restarts: int,
+                 draws_per_restart: int,
+                 burnin: int,
+                 delay: int,
+                 per_sink_feature_assignments: bool,
+                 sample_with_replacement: bool,
+                 source_sink_column: str,
+                 source_column_value: str,
+                 sink_column_value: str,
+                 source_category_column: str) -> (pd.DataFrame,
+                                                  pd.DataFrame):
+    # run the gibbs sampler helper function (same used for q2)
+    results = gibbs_helper(table_fp, mapping_fp, loo, jobs,
+                           alpha1, alpha2, beta, source_rarefaction_depth,
+                           sink_rarefaction_depth, restarts, draws_per_restart,
+                           burnin, delay, per_sink_feature_assignments, 
+                           sample_with_replacement, source_sink_column,
+                           source_column_value, sink_column_value,
+                           source_category_column)
+    if len(results) == 3:
+        # get the results (without fas)
+        mpm, mps, _ = results
+    else:
+        # get the results (without fas)
+        mpm, mps = results  
+    # here we only return the two df
+    # this is because QIIME will only
+    # support these for now
+    # in the future we will work
+    # on supporting collections (i.e. fas)
+    return mpm, mps
 
 def gibbs_helper(table_fp: Table,
                  mapping_fp: pd.DataFrame,
@@ -37,7 +79,9 @@ def gibbs_helper(table_fp: Table,
                  source_sink_column: str,
                  source_column_value: str,
                  sink_column_value: str,
-                 source_category_column: str):
+                 source_category_column: str) -> (pd.DataFrame,
+                                                  pd.DataFrame,
+                                                  list):
     '''Gibb's sampler for Bayesian estimation of microbial sample sources.
 
     This function is a helper that applies to both the click and QIIME2
@@ -115,7 +159,7 @@ def gibbs_helper(table_fp: Table,
         sinks = None
 
     # Run the computations.
-    mpm, mps, fas = gibbs(csources, sinks, alpha1, alpha2, beta, restarts,
+    mpm, mps, fas = _gibbs(csources, sinks, alpha1, alpha2, beta, restarts,
                           draws_per_restart, burnin, delay, jobs,
                           create_feature_tables=per_sink_feature_assignments)
     # number of returns chnages based on flag

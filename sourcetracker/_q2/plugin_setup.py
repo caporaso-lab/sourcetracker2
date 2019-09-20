@@ -14,7 +14,7 @@ from qiime2.plugin import (Properties, Int, Float,
                            Metadata, Str, Bool, Choices)
 from q2_types.feature_table import (FeatureTable, Frequency,
                                     RelativeFrequency)
-from sourcetracker._gibbs import gibbs_helper as gibbs
+from sourcetracker._gibbs import gibbs
 
 # import default descriptions
 from sourcetracker._gibbs_defaults import (DESC_TBL, DESC_MAP, DESC_OUT,
@@ -72,7 +72,7 @@ PARAMETERDESC = {'mapping_fp': DESC_MAP,
                  'source_category_column': DESC_CAT}
 
 citations = qiime2.plugin.Citations.load(
-    'citations.bib', package='sourcetracker2')
+    '_q2/citations.bib', package='sourcetracker')
 
 plugin = qiime2.plugin.Plugin(
     name='sourcetracker2',
@@ -81,7 +81,7 @@ plugin = qiime2.plugin.Plugin(
     citations=[citations['Knights2011-qx']],
     short_description=('Plugin for source tracking.'),
     description=('This is a QIIME 2 plugin supporting sourcetracker2.'),
-    package='sourcetracker2')
+    package='sourcetracker')
 
 plugin.methods.register_function(
     function=gibbs,
@@ -89,7 +89,7 @@ plugin.methods.register_function(
     parameters=PARAMETERS,
     outputs=[('mixing_proporitions', FeatureTable[RelativeFrequency]),
              ('mixing_proportion_stds', FeatureTable[RelativeFrequency])],
-    input_descriptions={'table': DESC_TBL},
+    input_descriptions={'table_fp': DESC_TBL},
     parameter_descriptions=PARAMETERDESC,
     output_descriptions={'mixing_proporitions': OUT_MEAN,
                          'mixing_proportion_stds': OUT_STD},
