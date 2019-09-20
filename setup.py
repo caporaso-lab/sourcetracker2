@@ -27,12 +27,19 @@ classifiers = [s.strip() for s in classes.split('\n') if s]
 
 description = "Python implementation of the SourceTracker R package."
 
+standalone = ['sourcetracker2=sourcetracker._cli.gibbs:gibbs']
+q2cmds = ['q2-sourcetracker2=sourcetracker._q2.plugin_setup:plugin']
+
+with open('README.md') as f:
+    long_description = f.read()
+
 setup(
     name='sourcetracker',
     version=__version__,
     license='modified BSD',
     description=description,
-    long_description=description,
+    long_description=long_description,
+    long_description_content_type='text/markdown',
     author='Biota Technology',
     author_email='will@biota.com',
     maintainer='Will Van Treuren',
@@ -44,7 +51,6 @@ setup(
                       'click', 'scikit-bio', 'pandas', 'scipy >= 0.18.0',
                       'seaborn'],
     classifiers=classifiers,
-    entry_points='''
-        [console_scripts]
-        sourcetracker2=sourcetracker._cli:cli
-        ''')
+    package_data={'sourcetracker/_q2': ['citations.bib']},
+    entry_points={'qiime2.plugins': q2cmds,
+                  'console_scripts': standalone})

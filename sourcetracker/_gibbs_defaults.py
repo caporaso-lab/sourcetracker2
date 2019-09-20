@@ -70,6 +70,10 @@ DESC_SRS2 = ('Value in source_sink_column indicating which samples '
              'should be treated as sinks.')
 DESC_CAT = ('Sample metadata column indicating the type of each '
             'source sample.')
-
-
-         
+OUT_MEAN = ('The mixing_proporitions output is a table with sinks'
+            ' as rows and sources as columns. The values in the '
+            'table are the mean fractional contributions of each '
+            'source to each sink.')
+OUT_STD = ('The mixing_proporitions_*stds* has the same format as '
+           'mixing proporitions, but contains the standard deviation'
+           ' of each fractional contribution.')

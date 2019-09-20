@@ -12,13 +12,9 @@ from __future__ import division
 
 import os
 import click
-
-from biom import load_table
+import pandas as pd
+from biom import load_table, Table
 from sourcetracker._cli import cli
-from sourcetracker._sourcetracker import (gibbs, intersect_and_sort_samples,
-                                          get_samples, collapse_source_data,
-                                          subsample_dataframe,
-                                          validate_gibbs_input)
 from sourcetracker._gibbs import gibbs_helper
 from sourcetracker._util import parse_sample_metadata, biom_to_df
 from sourcetracker._plot import plot_heatmap
@@ -35,9 +31,10 @@ from sourcetracker._gibbs_defaults import (DESC_TBL, DESC_MAP, DESC_OUT,
 # import default values
 from sourcetracker._gibbs_defaults import (DEFAULT_ALPH1, DEFAULT_ALPH2,
                                            DEFAULT_TEN, DEFAULT_ONE,
-                                           DEFAULT_THOUS, DEFAULT_FLS,
-                                           DEFAULT_SNK, DEFAULT_SRS,
-                                           DEFAULT_SRS2, DEFAULT_CAT)
+                                           DEFAULT_HUND, DEFAULT_THOUS,
+                                           DEFAULT_FLS, DEFAULT_SNK,
+                                           DEFAULT_SRS, DEFAULT_SRS2,
+                                           DEFAULT_CAT)
 
 @cli.command(name='gibbs')
 @click.option('-i', '--table_fp', required=True,
@@ -50,7 +47,7 @@ from sourcetracker._gibbs_defaults import (DEFAULT_ALPH1, DEFAULT_ALPH2,
               type=click.Path(exists=False, dir_okay=True, file_okay=False,
                               writable=True),
               help=DESC_OUT)
-@click.option('--loo', required=False, default=False, is_flag=True,
+@click.option('--loo', required=False, default=DEFAULT_FLS, is_flag=True,
               show_default=True,
               help=DESC_LOO)
 @click.option('--jobs', required=False, default=DEFAULT_ONE,
@@ -101,12 +98,26 @@ from sourcetracker._gibbs_defaults import (DEFAULT_ALPH1, DEFAULT_ALPH2,
 @click.option('--source_category_column', required=False, default=DEFAULT_CAT,
               type=click.STRING, show_default=True,
               help=DESC_CAT)
-def gibbs_cli(table_fp, mapping_fp, output_dir, loo, jobs, alpha1, alpha2,
-              beta, source_rarefaction_depth, sink_rarefaction_depth, restarts,
-              draws_per_restart, burnin, delay, per_sink_feature_assignments,
-              sample_with_replacement, source_sink_column,
-              source_column_value, sink_column_value,
-              source_category_column):
+def gibbs(table_fp: Table,
+              mapping_fp: pd.DataFrame,
+              output_dir: str,
+              loo: bool,
+              jobs: int,
+              alpha1: float,
+              alpha2: float,
+              beta: float,
+              source_rarefaction_depth: int,
+              sink_rarefaction_depth: int,
+              restarts: int,
+              draws_per_restart: int,
+              burnin: int,
+              delay: int,
+              per_sink_feature_assignments: bool,
+              sample_with_replacement: bool,
+              source_sink_column: str,
+              source_column_value: str,
+              sink_column_value: str,
+              source_category_column: str):
     '''Gibb's sampler for Bayesian estimation of microbial sample sources.
 
     For details, see the project README file.
