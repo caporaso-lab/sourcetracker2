@@ -1,0 +1,7 @@
+nose
+numpy
+scipy
+h5py
+flake8
+scikit-bio
+seaborn

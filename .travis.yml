@@ -11,11 +11,15 @@ before_install:
   - ./miniconda.sh -b
   - export PATH=/home/travis/miniconda3/bin:$PATH
 install:
-  - conda create --yes -n st2 -c biocore python=$PYTHON_VERSION nose numpy scipy h5py flake8 scikit-bio seaborn
-  - source activate st2
-  - pip install coveralls
-  - pip install .
+  - wget -q https://raw.githubusercontent.com/qiime2/environment-files/master/latest/staging/qiime2-latest-py36-linux-conda.yml
+  - conda env create -q -n test-env --file qiime2-latest-py36-linux-conda.yml
+  - conda install --yes -n test-env --file ci/conda_requirements.txt -c biocore
+  - conda install --yes -n test-env cython
+  - source activate test-env
+  - sudo pip install -r ci/pip_requirements.txt
+  - sudo pip install -e .
 script:
+  - source activate test-env
   - nosetests --with-coverage
   - flake8 sourcetracker setup.py
   - nosetests -v -s sourcetracker/_cli --cover-package=sourcetracker  
