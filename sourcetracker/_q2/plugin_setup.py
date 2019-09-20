@@ -57,7 +57,9 @@ PARAMETERDESC = {'sample_metadata': DESC_MAP,
                  'draws_per_restart': DESC_DRW,
                  'burnin': DESC_BRN,
                  'delay': DESC_DLY,
-                 'per_sink_feature_assignments': DESC_PFA,
+                 'per_sink_feature_assignments': 'This feature is disabled' +
+                                                 'but is coming soon! ' +
+                                                 DESC_PFA,
                  'sample_with_replacement': DESC_RPL,
                  'source_sink_column': DESC_SNK,
                  'source_column_value': DESC_SRS,
