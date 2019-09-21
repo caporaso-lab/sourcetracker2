@@ -32,7 +32,8 @@ class Test_standalone_gibbs(unittest.TestCase):
                                       'sink_column_value': 'sink',
                                       'source_category_column': 'Env',
                                       'sink_rarefaction_depth': 1000,
-                                      'source_rarefaction_depth': 1000},
+                                      'source_rarefaction_depth': 1000,
+                                      'per_sink_feature_assignments': True},
                          'example2': {'mapping': 'alt-map.txt',
                                       'restarts': 2,
                                       'draws_per_restart': 3,
@@ -44,7 +45,8 @@ class Test_standalone_gibbs(unittest.TestCase):
                                       'sink_column_value': 'snk',
                                       'source_category_column': 'sample-type',
                                       'sink_rarefaction_depth': 1000,
-                                      'source_rarefaction_depth': 1000},
+                                      'source_rarefaction_depth': 1000,
+                                      'per_sink_feature_assignments': False},
                          'example3': {'mapping': 'map.txt',
                                       'restarts': 2,
                                       'draws_per_restart': 3,
@@ -56,7 +58,8 @@ class Test_standalone_gibbs(unittest.TestCase):
                                       'sink_column_value': 'sink',
                                       'source_category_column': 'Env',
                                       'sink_rarefaction_depth': 1000,
-                                      'source_rarefaction_depth': 1000},
+                                      'source_rarefaction_depth': 1000,
+                                      'per_sink_feature_assignments': False},
                          'example4': {'mapping': 'map.txt',
                                       'restarts': 2,
                                       'draws_per_restart': 3,
@@ -68,7 +71,8 @@ class Test_standalone_gibbs(unittest.TestCase):
                                       'sink_column_value': 'sink',
                                       'source_category_column': 'Env',
                                       'sink_rarefaction_depth': 1000,
-                                      'source_rarefaction_depth': 1000},
+                                      'source_rarefaction_depth': 1000,
+                                      'per_sink_feature_assignments': False},
                          'example5': {'mapping': 'map.txt',
                                       'restarts': 2,
                                       'draws_per_restart': 3,
@@ -80,7 +84,8 @@ class Test_standalone_gibbs(unittest.TestCase):
                                       'sink_column_value': 'sink',
                                       'source_category_column': 'Env',
                                       'sink_rarefaction_depth': 1700,
-                                      'source_rarefaction_depth': 1500}}
+                                      'source_rarefaction_depth': 1500,
+                                      'per_sink_feature_assignments': False}}
 
     def test_standalone_gibbs(self):
         """Checks the output produced by sourcetracker2's standalone script.
@@ -106,7 +111,9 @@ class Test_standalone_gibbs(unittest.TestCase):
                 # add the additional loo flag if needed
                 add_ = []
                 if perams['loo']:
-                    add_ = ['--loo']
+                    add_ += ['--loo']
+                elif perams['per_sink_feature_assignments']:
+                    add_ += ['--per_sink_feature_assignments']
                 # run the cli using the testing runner
                 runner = CliRunner()
                 result = runner.invoke(gibbs,
