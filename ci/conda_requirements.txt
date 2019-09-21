@@ -1,7 +1,13 @@
+pip
 nose
+pep8
+flake8
+IPython>4.0.0
+notebook
+scikit-bio
+biom-format
 numpy
 scipy
-h5py
-flake8
-scikit-bio
+matplotlib
+pandas
 seaborn
