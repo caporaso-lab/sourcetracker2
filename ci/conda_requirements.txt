@@ -1,5 +1,6 @@
-nose
+pip
 numpy
+nose
 scipy
 h5py
 flake8
