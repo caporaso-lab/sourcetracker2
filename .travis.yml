@@ -25,9 +25,7 @@ install:
   - sudo pip install coveralls
 script:
   - source activate test-env
-  - nosetests  -v -s sourcetracker --with-coverage=sourcetracker
   - flake8 sourcetracker setup.py
-  - nosetests -v -s sourcetracker/_cli --cover-package=sourcetracker  
-  - nosetests -v -s sourcetracker/_q2 --cover-package=sourcetracker 
+  - nosetests -v sourcetracker sourcetracker/* --with-coverage --cover-package=sourcetracker
 after_success:
   - coveralls
