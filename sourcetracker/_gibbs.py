@@ -59,13 +59,9 @@ def gibbs(feature_table: Table,
                            sample_with_replacement, source_sink_column,
                            source_column_value, sink_column_value,
                            source_category_column)
-    if len(results) == 3:
-        # get the results (without fas)
-        mpm, mps, _ = results
-    else:
-        # get the results (without fas)
-        mpm, mps = results
-    # here we only return the two df
+    # get the results (without fas)
+    # here we only return the two df (via q2)
+    mpm, mps = results
     # this is because QIIME will only
     # support these for now
     # in the future we will work
