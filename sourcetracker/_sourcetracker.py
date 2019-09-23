@@ -600,14 +600,80 @@ def gibbs_sampler(sink, cp, restarts, draws_per_restart, burnin, delay):
     return (final_envcounts, final_env_assignments, final_taxon_assignments)
 
 
-def _gibbs_loo(cp_and_sink, restarts, draws_per_restart, burnin, delay):
-    return gibbs_sampler(cp_and_sink[1], cp_and_sink[0], restarts,
-                         draws_per_restart, burnin, delay)
+def filter_features(sink, sources, loo, filter_zero_counts):
+    """Filter features that have no counts.
+
+    Notes
+    -----
+    The purpose of this function is to abstract the filtering from
+    _gibbs_wrapper in order to enable testing
+
+    Parameters
+    ----------
+    sink : tuple
+        The first element of the tuple should be the index of the sink, the
+        second should be a pandas series containing feature counts, indexed by
+        feature ID. This is necessary in order to pass function to
+        parallelization
+    source : pd.DataFrame
+        A dataframe containing source data (rows are sinks, columns are
+        features)
+    loo : bool
+       If True filter the sink id from the source dataframe. If False do
+       nothing
+    filter_features : bool
+       If True remove any features that have zero counts in both the sink and
+       sources
+    """
+    id_, sink_counts = sink
+    columns = sources.columns
+    if filter_zero_counts:
+        cols_to_keep = sources.sum() + sink_counts > 0
+        columns = columns[cols_to_keep]
+        sources = sources.loc[:, cols_to_keep].copy()
+        sink_counts = sink_counts[cols_to_keep].copy()
+
+    if loo:
+        sources.drop(id_, inplace=True)
+    return sink_counts, sources, columns
+
+
+def _gibbs_wrapper(sink, sources, restarts, draws_per_restart, burnin, delay,
+                   alpha1, alpha2, beta, loo, create_feature_tables,
+                   filter_zero_counts):
+    """wrap gibbs call for parallelization.
+
+    notes
+    -----
+    this function exists only to enable parallelization it should not be run
+    directly
+    """
+    sink_name = sink[0]
+    sink_counts, sources, columns = filter_features(sink, sources, loo,
+                                                    filter_zero_counts)
+    cp = ConditionalProbability(alpha1, alpha2, beta, sources.values)
+
+    env_counts, env_assignments, taxon_assignments = gibbs_sampler(
+            sink_counts.values, cp, restarts, draws_per_restart, burnin, delay)
+
+    # setting loo to False no matter what here as _gibbs_wrapper never returns
+    # data for more than a single sample
+    results = collate_gibbs_results(
+            all_envcounts=[env_counts],
+            all_env_assignments=[env_assignments],
+            all_taxon_assignments=[taxon_assignments],
+            sink_ids=[sink_name],
+            source_ids=sources.index,
+            feature_ids=columns,
+            create_feature_tables=create_feature_tables,
+            loo=False
+            )
+    return results
 
 
 def gibbs(sources, sinks=None, alpha1=.001, alpha2=.1, beta=10, restarts=10,
           draws_per_restart=1, burnin=100, delay=1, jobs=1,
-          create_feature_tables=True):
+          create_feature_tables=True, filter_zero_counts=True):
     '''Gibb's sampling API.
 
     Notes
@@ -682,6 +748,12 @@ def gibbs(sources, sinks=None, alpha1=.001, alpha2=.1, beta=10, restarts=10,
         sink. This option can consume large amounts of memory if there are many
         source, sinks, and features. If `False`, feature tables are not
         created.
+    filter_zero_counts: bool
+        If a features count is 0 in all sources, and in a given sink remove it
+        from the analysis. This situation can arise because sourcetracker2
+        requires headers in the source and sink tables to be identical, so
+        there may be sinks that do not have a feature that is present in
+        another sink.
 
     Returns
     -------
@@ -767,40 +839,35 @@ def gibbs(sources, sinks=None, alpha1=.001, alpha2=.1, beta=10, restarts=10,
             'restarts': restarts,
             'draws_per_restart': draws_per_restart,
             'burnin': burnin,
-            'delay': delay
+            'delay': delay,
+            'filter_zero_counts': filter_zero_counts,
+            'alpha1': alpha1,
+            'alpha2': alpha2,
+            'beta': beta,
+            'create_feature_tables': create_feature_tables
             }
 
-    # Run LOO predictions on `sources`.
     if sinks is None:
-        cps_and_sinks = []
-        for source in sources.index:
-            _sources = sources.select(lambda x: x != source)
-            cp = ConditionalProbability(alpha1, alpha2, beta, _sources.values)
-            sink = sources.loc[source, :].values
-            cps_and_sinks.append((cp, sink))
-
-        f = partial(_gibbs_loo, **kwargs)
-
-        args = cps_and_sinks
-        sinks = sources
-        loo = True
-
-    # Run normal prediction on `sinks`.
+        sinks = sources.copy()
+        kwargs['loo'] = True
     else:
-        cp = ConditionalProbability(alpha1, alpha2, beta, sources.values)
-        f = partial(gibbs_sampler, cp=cp, **kwargs)
-        args = sinks.values
-        loo = False
+        kwargs['loo'] = False
 
+    f = partial(_gibbs_wrapper, sources=sources, **kwargs)
     with Pool(jobs) as p:
-        results = p.map(f, args)
+        results = p.map(f, [e for e in sinks.iterrows()])
 
-    return collate_gibbs_results([i[0] for i in results],
-                                 [i[1] for i in results],
-                                 [i[2] for i in results],
-                                 sinks.index, sources.index,
-                                 sources.columns,
-                                 create_feature_tables, loo=loo)
+    mp = pd.concat([e[0] for e in results], sort=False)
+    mps = pd.concat([e[1] for e in results], sort=False)
+    if create_feature_tables:
+        fas = [e[2][0] for e in results]
+        # If LOO then when data is concatenated there will be a null value for
+        # each of the left out samples
+        mp.fillna(0, inplace=True)
+        mps.fillna(0, inplace=True)
+    else:
+        fas = None
+    return mp, mps, fas
 
 
 def cumulative_proportions(all_envcounts, sink_ids, source_ids):

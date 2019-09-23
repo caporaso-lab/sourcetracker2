@@ -25,7 +25,8 @@ from sourcetracker._sourcetracker import (intersect_and_sort_samples,
                                           cumulative_proportions,
                                           single_sink_feature_table,
                                           ConditionalProbability,
-                                          gibbs_sampler, gibbs)
+                                          gibbs_sampler, gibbs, _gibbs_wrapper,
+                                          filter_features)
 from sourcetracker._plot import plot_heatmap
 
 
@@ -927,6 +928,40 @@ class ConditionalProbabilityTests(TestCase):
 
 class TestGibbs(TestCase):
     '''Unit tests for Gibbs based on seeding the PRNG and hand calculations.'''
+    def setUp(self):
+        self.index = ['s%s' % i for i in range(5)]
+        self.columns = ['f%s' % i for i in range(4)]
+
+        self.sources_data = \
+            np.array([[0, 0, 0, 0, 0, 0, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0],
+                      [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                          0, 16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  4],
+                      [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                          0, 0, 0, 0, 0, 0, 0, 0, 0, 19, 0, 0, 0, 0,  0]],
+                     dtype=np.int32)
+        self.sources_names = ['source1', 'source2', 'source3']
+        self.feature_names = ['f%i' % i for i in range(32)]
+        self.sources = pd.DataFrame(self.sources_data,
+                                    index=self.sources_names,
+                                    columns=self.feature_names)
+
+        self.sinks_data = \
+            np.array([[0, 0, 0, 0, 0, 0, 170, 0, 0, 0, 0, 0, 0, 0, 0,
+                       0, 0, 0, 385, 0, 0, 0, 0, 0, 0, 0, 350, 0, 0,
+                       0, 0, 95],
+                      [0, 0, 0, 0, 0, 0, 170, 0, 0, 0, 0, 0, 0, 0, 0,
+                       0, 0, 0, 380, 0, 0, 0, 0, 0, 0, 0, 350, 0, 0,
+                       0, 0, 100],
+                      [0, 0, 0, 0, 0, 0, 170, 0, 0, 0, 0, 0, 0, 0, 0,
+                       0, 0, 0, 378, 0, 0, 0, 0, 0, 0, 0, 350, 0, 0,
+                       0, 0, 102],
+                      [0, 0, 0, 0, 0, 0, 170, 0, 0, 0, 0, 0, 0, 0, 0,
+                       0, 0, 0, 386, 0, 0, 0, 0, 0, 0, 0, 350, 0, 0,
+                       0, 0, 94]], dtype=np.int32)
+        self.sinks_names = ['sink1', 'sink2', 'sink3', 'sink4']
+        self.sinks = pd.DataFrame(self.sinks_data, index=self.sinks_names,
+                                  columns=self.feature_names)
 
     def test_single_pass_gibbs_sampler(self):
         # The data for this test was built by seeding the PRNG, and making the
@@ -1150,34 +1185,46 @@ class TestGibbs(TestCase):
         exp_mps = pd.DataFrame(vals, index=source_names,
                                columns=source_names + ['Unknown'])
 
-        fts0_vals = np.array([[0, 0, 0, 0, 0, 0],
-                              [93, 87, 101, 0, 0, 0],
+        fts0_vals = np.array([[93, 87, 101, 0, 0, 0],
                               [0, 0, 0, 0, 0, 0],
                               [3, 4, 0, 0, 0, 0],
                               [54, 59, 49, 0, 0, 0]])
         fts1_vals = np.array([[113, 98, 97, 0, 0, 0],
-                              [0, 0, 0, 0, 0, 0],
                               [0, 0, 0, 15, 13, 14],
                               [5, 7, 11, 11, 12, 11],
                               [2, 15, 12, 4, 5, 5]])
         fts2_vals = np.array([[0, 0, 0, 0, 0, 0],
                               [0, 0, 0, 2, 1, 1],
-                              [0, 0, 0, 0, 0, 0],
                               [0, 0, 0, 12, 12, 13],
                               [0, 0, 0, 136, 137, 136]])
         fts3_vals = np.array([[28, 27, 31, 0, 0, 0],
                               [27, 24, 25, 3, 4, 7],
                               [0, 0, 0, 80, 71, 74],
-                              [0, 0, 0, 0, 0, 0],
                               [5, 9, 4, 7, 15, 9]])
         fts_vals = [fts0_vals, fts1_vals, fts2_vals, fts3_vals]
-        exp_fts = [pd.DataFrame(vals, index=source_names + ['Unknown'],
-                   columns=feature_names) for vals in fts_vals]
 
-        pd.util.testing.assert_frame_equal(obs_mpm, exp_mpm)
-        pd.util.testing.assert_frame_equal(obs_mps, exp_mps)
+        exp_fts = []
+        for index, ft_val in zip(source_names, fts_vals):
+            temp = source_names.copy()
+            temp.remove(index)
+            exp_fts.append(
+                    pd.DataFrame(
+                        ft_val,
+                        index=temp + ['Unknown'],
+                        columns=feature_names)
+                        )
+        pd.util.testing.assert_frame_equal(
+                obs_mpm.sort_index(axis=1),
+                exp_mpm.sort_index(axis=1)
+                )
+        pd.util.testing.assert_frame_equal(
+                obs_mps.sort_index(axis=1),
+                exp_mps.sort_index(axis=1)
+                )
+
         for obs_fts, exp_fts in zip(obs_fts, exp_fts):
-            pd.util.testing.assert_frame_equal(obs_fts, exp_fts)
+            pd.util.testing.assert_frame_equal(obs_fts,
+                                               exp_fts.astype(np.int32))
 
     def test_gibbs_close_to_sourcetracker_1(self):
         '''This test is stochastic; occasional errors might occur.
@@ -1188,50 +1235,153 @@ class TestGibbs(TestCase):
         R version 2.15.3.
         '''
 
-        sources_data = \
-            np.array([[0, 0, 0, 0, 0, 0, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0],
-                      [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                       0, 16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  4],
-                      [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                       0, 0, 0, 0, 0, 0, 0, 0, 0, 19, 0, 0, 0, 0,  0]],
-                     dtype=np.int32)
-        sources_names = ['source1', 'source2', 'source3']
-        feature_names = ['f%i' % i for i in range(32)]
-        sources = pd.DataFrame(sources_data, index=sources_names,
-                               columns=feature_names)
-
-        sinks_data = np.array([[0, 0, 0, 0, 0, 0, 170, 0, 0, 0, 0, 0, 0, 0, 0,
-                                0, 0, 0, 385, 0, 0, 0, 0, 0, 0, 0, 350, 0, 0,
-                                0, 0, 95],
-                               [0, 0, 0, 0, 0, 0, 170, 0, 0, 0, 0, 0, 0, 0, 0,
-                                0, 0, 0, 380, 0, 0, 0, 0, 0, 0, 0, 350, 0, 0,
-                                0, 0, 100],
-                               [0, 0, 0, 0, 0, 0, 170, 0, 0, 0, 0, 0, 0, 0, 0,
-                                0, 0, 0, 378, 0, 0, 0, 0, 0, 0, 0, 350, 0, 0,
-                                0, 0, 102],
-                               [0, 0, 0, 0, 0, 0, 170, 0, 0, 0, 0, 0, 0, 0, 0,
-                                0, 0, 0, 386, 0, 0, 0, 0, 0, 0, 0, 350, 0, 0,
-                                0, 0, 94]], dtype=np.int32)
-        sinks_names = ['sink1', 'sink2', 'sink3', 'sink4']
-        sinks = pd.DataFrame(sinks_data, index=sinks_names,
-                             columns=feature_names)
-
-        obs_mpm, obs_mps, _ = gibbs(sources, sinks, alpha1=.001, alpha2=.1,
-                                    beta=10, restarts=2, draws_per_restart=2,
-                                    burnin=5, delay=2,
-                                    create_feature_tables=False)
+        obs_mpm, obs_mps, _ = gibbs(self.sources, self.sinks, alpha1=.001,
+                                    alpha2=.1, beta=10, restarts=2,
+                                    draws_per_restart=2, burnin=5, delay=2,
+                                    create_feature_tables=False,
+                                    filter_zero_counts=False)
 
         exp_vals = np.array([[0.1695, 0.4781, 0.3497, 0.0027],
                              [0.1695, 0.4794, 0.3497, 0.0014],
                              [0.1693, 0.4784, 0.3499, 0.0024],
                              [0.1696, 0.4788, 0.3494, 0.0022]])
-        exp_mpm = pd.DataFrame(exp_vals, index=sinks_names,
-                               columns=sources_names + ['Unknown'])
+        exp_mpm = pd.DataFrame(exp_vals, index=self.sinks_names,
+                               columns=self.sources_names + ['Unknown'])
 
         pd.util.testing.assert_index_equal(obs_mpm.index, exp_mpm.index)
         pd.util.testing.assert_index_equal(obs_mpm.columns, exp_mpm.columns)
         np.testing.assert_allclose(obs_mpm.values, exp_mpm.values, atol=.01)
+
+    def test_gibbs_close_to_sourcetracker_w_filter(self):
+        '''This test is stochastic; occasional errors might occur.
+
+        Notes
+        -----
+        This tests against the R-code SourceTracker version 1.0, using
+        R version 2.15.3.
+        '''
+
+        obs_mpm, obs_mps, _ = gibbs(self.sources, self.sinks, alpha1=.001,
+                                    alpha2=.1, beta=10, restarts=2,
+                                    draws_per_restart=2, burnin=5, delay=2,
+                                    create_feature_tables=False,
+                                    filter_zero_counts=True)
+
+        exp_vals = np.array([[0.1095, 0.3605, 0.28675, 0.24325],
+                             [0.12175, 0.38575, 0.30325, 0.18925],
+                             [0.114, 0.381, 0.29875, 0.20625],
+                             [0.129, 0.38975, 0.3035, 0.17775]])
+
+        exp_mpm = pd.DataFrame(exp_vals, index=self.sinks_names,
+                               columns=self.sources_names + ['Unknown'])
+
+        pd.util.testing.assert_index_equal(obs_mpm.index, exp_mpm.index)
+        pd.util.testing.assert_index_equal(obs_mpm.columns, exp_mpm.columns)
+        np.testing.assert_allclose(obs_mpm.values, exp_mpm.values, atol=.01)
+
+    def test_gibbs_fa_with_filter(self):
+        feats = ["feat1", "feat2", "feat3", "feat4"]
+        sinks = pd.DataFrame(
+                data=[[1, 0, 1, 4], [1, 4, 1, 0]],
+                columns=feats,
+                index=["sink1", "sink2"]
+                )
+
+        sources = pd.DataFrame(
+                data=[[2, 0, 3, 0], [1, 0, 5, 0]],
+                columns=feats,
+                index=["source1", "source2"],
+                )
+
+        mp_gibbs, mps_gibbs, feats_gibbs = gibbs(
+                sources, sinks, filter_zero_counts=True
+                )
+
+        sink1_feats = pd.DataFrame(
+                [[4, 4, 0], [4, 5, 0], [2, 1, 40]],
+                columns=["feat1", "feat3", "feat4"],
+                index=["source1", "source2", "Unknown"],
+                )
+        sink2_feats = pd.DataFrame(
+                [[7, 0, 5], [1, 0, 5], [2, 40, 0]],
+                columns=["feat1", "feat2", "feat3"],
+                index=['source1', 'source2', 'Unknown'])
+
+        pd.testing.assert_frame_equal(sink1_feats.astype(np.int32),
+                                      feats_gibbs[0])
+        pd.testing.assert_frame_equal(sink2_feats.astype(np.int32),
+                                      feats_gibbs[1])
+
+
+class TestGibbsWrapper(TestCase):
+    def setUp(self):
+        self.sink = ('x', pd.Series([1, 0, 0, 0, 0, 0], index=list('abcdef')))
+        self.sources = pd.DataFrame([[1, 0, 0, 0, 0, 0],
+                                     [1, 1, 0, 0, 0, 0],
+                                     [1, 0, 0, 1, 0, 0],
+                                     [1, 0, 0, 0, 1, 0]],
+                                    columns=list('abcdef'), index=list('wxyz'))
+        self.params = {
+                'restarts': 1,
+                'draws_per_restart': 1,
+                'burnin': 1,
+                'delay': 1,
+                'alpha1': .01,
+                'alpha2': .01,
+                'beta': 1
+                }
+
+    def test_valid_input(self):
+        mpm, mps, fts = _gibbs_wrapper(
+                self.sink, self.sources, loo=False,
+                filter_zero_counts=True, create_feature_tables=True,
+                **self.params
+                )
+        # This is only asserting the function is returning. The gibbs sampler
+        # has it's own tests
+        self.assertEqual(mpm.shape, (1, 5))
+
+    def test_filter_zeros(self):
+        sink_counts, sources, columns = filter_features(
+                self.sink,
+                self.sources, loo=False,
+                filter_zero_counts=True
+                )
+        pd.testing.assert_series_equal(
+                sink_counts, pd.Series(data=[1, 0, 0, 0], index=list('abde'))
+                )
+        pd.testing.assert_frame_equal(sources,
+                                      self.sources.drop(['c', 'f'], axis=1))
+        self.assertEqual(list('abde'), columns.tolist())
+
+    def test_filter_zeros_loo(self):
+        sink_counts, sources, columns = filter_features(
+                self.sink,
+                self.sources, loo=True,
+                filter_zero_counts=True
+                )
+        pd.testing.assert_series_equal(
+                sink_counts, pd.Series(data=[1, 0, 0, 0], index=list('abde'))
+                )
+        pd.testing.assert_frame_equal(
+                sources,
+                self.sources.drop(['c', 'f'], axis=1).drop('x'))
+        self.assertEqual(list('abde'), columns.tolist())
+
+    def test_filter_zeros_no_filter(self):
+        sink_counts, sources, columns = filter_features(
+                self.sink,
+                self.sources, loo=False,
+                filter_zero_counts=False
+                )
+        pd.testing.assert_series_equal(
+                sink_counts, self.sink[1]
+                )
+        pd.testing.assert_frame_equal(
+                sources,
+                self.sources)
+
+        self.assertEqual(list('abcdef'), columns.tolist())
 
 
 class PlotHeatmapTests(TestCase):
