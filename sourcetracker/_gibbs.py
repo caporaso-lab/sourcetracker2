@@ -67,7 +67,7 @@ def gibbs(feature_table: Table,
                                         if ind not in factor]
     # concat each sink-source (dropping sources with same name as sink)
     fas_merged = pd.concat({sink:source.reindex(filter_list(source.index, sink))
-                            for sink, source in zip(mpm.index, fas)})
+                            for sink, source in zip(mpm.columns, fas)})
     # join the index
     fas_merged.index = ['-'.join(map(str,i))
                         for i in fas_merged.index.tolist()]

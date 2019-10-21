@@ -159,7 +159,7 @@ def gibbs(table_fp: Table,
     if len(results) == 3:
         mpm, mps, fas = results
         # write the feature tables from fas
-        for sink, fa in zip(mpm.index, fas):
+        for sink, fa in zip(mpm.columns, fas):
             fa.to_csv(os.path.join(output_dir, sink + '.feature_table.txt'),
                       sep='\t')
     else:
@@ -172,5 +172,5 @@ def gibbs(table_fp: Table,
                sep='\t')
 
     # Plot contributions.
-    fig, ax = plot_heatmap(mpm)
-    fig.savefig(os.path.join(output_dir, 'mixing_proportions.pdf'), dpi=300)
+    fig, ax = plot_heatmap(mpm.T)
+    fig.savefig(os.path.join(output_dir,'mixing_proportions.pdf'), dpi=300)
