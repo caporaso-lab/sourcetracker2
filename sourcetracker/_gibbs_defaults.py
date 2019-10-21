@@ -7,6 +7,7 @@ DEFAULT_TEN = 10
 DEFAULT_HUND = 100
 DEFAULT_THOUS = 1000
 DEFAULT_FLS = False
+DEFAULT_TRU = True
 DEFAULT_SNK = 'SourceSink'
 DEFAULT_SRS = 'source'
 DEFAULT_SRS2 = 'sink'
@@ -59,7 +60,8 @@ DESC_PFA = ('If True, this option will cause SourceTracker2 to write '
             'is passed). These feature tables contain the specific '
             'sequences that contributed to a sink from a given '
             'source. This option can be memory intensive if there are '
-            'a large number of features.')
+            'a large number of features. Note: in the QIIME 2 plugin'
+            ' this is non-optional and always set to true.')
 DESC_RPL = ('Sample with replacement instead of '
             'sample without replacement')
 DESC_SNK = ('Sample metadata column indicating which samples should be'
@@ -76,4 +78,7 @@ OUT_MEAN = ('The mixing_proporitions output is a table with sinks'
             'source to each sink.')
 OUT_STD = ('The mixing_proporitions_*stds* has the same format as '
            'mixing proporitions, but contains the standard deviation'
+           ' of each fractional contribution.')
+OUT_PFA =  ('The feature table for each sink (or source if `--loo '
+           'is passed). This feature table contains the specific '
            ' of each fractional contribution.')

@@ -110,19 +110,19 @@ class Test_QIIME2_gibbs(unittest.TestCase):
             rss_ = perams['sink_rarefaction_depth']
             scv_ = perams['source_column_value']
             scc_ = perams['source_category_column']
-            mp, mpstd = gibbs(q2table,
-                              q2meta,
-                              loo=perams['loo'],
-                              source_rarefaction_depth=rs_,
-                              sink_rarefaction_depth=rss_,
-                              restarts=perams['restarts'],
-                              draws_per_restart=perams['draws_per_restart'],
-                              burnin=perams['burnin'],
-                              delay=perams['delay'],
-                              source_sink_column=perams['source_sink_column'],
-                              source_column_value=scv_,
-                              sink_column_value=perams['sink_column_value'],
-                              source_category_column=scc_)
+            mp, mpstd, fas = gibbs(q2table,
+                                   q2meta,
+                                   loo=perams['loo'],
+                                   source_rarefaction_depth=rs_,
+                                   sink_rarefaction_depth=rss_,
+                                   restarts=perams['restarts'],
+                                   draws_per_restart=perams['draws_per_restart'],
+                                   burnin=perams['burnin'],
+                                   delay=perams['delay'],
+                                   source_sink_column=perams['source_sink_column'],
+                                   source_column_value=scv_,
+                                   sink_column_value=perams['sink_column_value'],
+                                   source_category_column=scc_)
             # Get the underlying data from these artifacts
             res_mp = mp.view(Table).to_dataframe().T
             # check mixing proportions from cli

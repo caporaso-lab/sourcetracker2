@@ -25,7 +25,7 @@ from sourcetracker._gibbs_defaults import (DEFAULT_ALPH1, DEFAULT_ALPH2,
                                            DEFAULT_HUND, DEFAULT_THOUS,
                                            DEFAULT_FLS, DEFAULT_SNK,
                                            DEFAULT_SRS, DEFAULT_SRS2,
-                                           DEFAULT_CAT)
+                                           DEFAULT_CAT, DEFAULT_TRU)
 
 
 def gibbs(feature_table: Table,
@@ -41,13 +41,13 @@ def gibbs(feature_table: Table,
           draws_per_restart: int = DEFAULT_ONE,
           burnin: int = DEFAULT_HUND,
           delay: int = DEFAULT_ONE,
-          per_sink_feature_assignments: bool = DEFAULT_FLS,
+          per_sink_feature_assignments: bool = DEFAULT_TRU,
           sample_with_replacement: bool = DEFAULT_FLS,
           source_sink_column: str = DEFAULT_SNK,
           source_column_value: str = DEFAULT_SRS,
           sink_column_value: str = DEFAULT_SRS2,
           source_category_column: str = DEFAULT_CAT)\
-              -> (pd.DataFrame, pd.DataFrame):
+              -> (pd.DataFrame, pd.DataFrame, Table):
     # convert tables
     feature_table = biom_to_df(feature_table)
     sample_metadata = sample_metadata.to_dataframe()
@@ -59,14 +59,28 @@ def gibbs(feature_table: Table,
                            sample_with_replacement, source_sink_column,
                            source_column_value, sink_column_value,
                            source_category_column)
-    # get the results (without fas)
-    # here we only return the two df (via q2)
-    mpm, mps = results
+    # get the results (with fas)
+    # here we only return the three df (via q2)
+    mpm, mps, fas = results
+    # make list filter
+    filter_list = lambda inds, factor: [ind for ind in list(inds)
+                                        if ind not in factor]
+    # concat each sink-source (dropping sources with same name as sink)
+    fas_merged = pd.concat({sink:source.reindex(filter_list(source.index, sink))
+                            for sink, source in zip(mpm.index, fas)})
+    # join the index
+    fas_merged.index = ['-'.join(map(str,i))
+                        for i in fas_merged.index.tolist()]
+    # output for QIIME2
+    fas_merged = fas_merged.T
+    fas_merged = Table(fas_merged.values,
+                    fas_merged.index,
+                    fas_merged.columns)
     # this is because QIIME will only
     # support these for now
     # in the future we will work
     # on supporting collections (i.e. fas)
-    return mpm, mps
+    return mpm, mps, fas_merged
 
 
 def gibbs_helper(feature_table: Table,

@@ -25,7 +25,7 @@ from sourcetracker._gibbs_defaults import (DESC_TBL, DESC_MAP,
                                            DESC_BRN, DESC_DLY, DESC_PFA,
                                            DESC_RPL, DESC_SNK, DESC_SRS,
                                            DESC_SRS2, DESC_CAT, OUT_MEAN,
-                                           OUT_STD)
+                                           OUT_STD, OUT_PFA)
 
 PARAMETERS = {'sample_metadata': Metadata,
               'loo': Bool,
@@ -39,7 +39,7 @@ PARAMETERS = {'sample_metadata': Metadata,
               'draws_per_restart': Int,
               'burnin': Int,
               'delay': Int,
-              'per_sink_feature_assignments': Bool % Choices(False),
+              'per_sink_feature_assignments': Bool % Choices(True),
               'sample_with_replacement': Bool,
               'source_sink_column': Str,
               'source_column_value': Str,
@@ -83,11 +83,13 @@ plugin.methods.register_function(
     inputs={'feature_table': FeatureTable[Frequency]},
     parameters=PARAMETERS,
     outputs=[('mixing_proporitions', FeatureTable[RelativeFrequency]),
-             ('mixing_proportion_stds', FeatureTable[RelativeFrequency])],
+             ('mixing_proportion_stds', FeatureTable[RelativeFrequency]),
+             ('feature_assignments', FeatureTable[RelativeFrequency])],
     input_descriptions={'feature_table': DESC_TBL},
     parameter_descriptions=PARAMETERDESC,
     output_descriptions={'mixing_proporitions': OUT_MEAN,
-                         'mixing_proportion_stds': OUT_STD},
+                         'mixing_proportion_stds': OUT_STD,
+                         'feature_assignments': OUT_PFA},
     name='sourcetracker2 gibbs',
     description=('SourceTracker2 is a highly parallel version of '
                  'SourceTracker that was originally described in'
