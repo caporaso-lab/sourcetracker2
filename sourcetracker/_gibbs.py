@@ -182,7 +182,10 @@ def gibbs_helper(feature_table: Table,
                            create_feature_tables=per_sink_feature_assignments)
     # number of returns chnages based on flag
     # this was refactored for QIIME2
+    # transpose to follow convention
+    # rows are features (i.e. taxa)
+    # columns are samples
     if per_sink_feature_assignments:
-        return mpm, mps, fas
+        return mpm.T, mps.T, fas
     else:
-        return mpm, mps
+        return mpm.T, mps.T

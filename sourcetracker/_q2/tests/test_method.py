@@ -134,7 +134,7 @@ class Test_QIIME2_gibbs(unittest.TestCase):
                                    'data',
                                    'exp_' + exmp_i,
                                    'mixing_proportions.txt')
-            exp_mp = pd.read_csv(exp_pth, sep='\t', index_col=0)
+            exp_mp = pd.read_csv(exp_pth, sep='\t', index_col=0).T
             # compare the results
             assert_allclose(exp_mp,
                             res_mp.loc[exp_mp.index,

@@ -155,7 +155,7 @@ class Test_standalone_gibbs(unittest.TestCase):
                 res_pth = os.path.join(temp_dir_name,
                                        'res_' + exmp_i,
                                        'mixing_proportions.txt')
-                exp_mp = pd.read_csv(exp_pth, sep='\t', index_col=0)
+                exp_mp = pd.read_csv(exp_pth, sep='\t', index_col=0).T
                 res_mp = pd.read_csv(res_pth, sep='\t', index_col=0)
                 # check values
                 assert_allclose(exp_mp,
