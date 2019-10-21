@@ -10,12 +10,15 @@
 
 import os
 import unittest
+import tempfile
 import pandas as pd
 from biom import Table, load_table
 from qiime2 import Artifact
 from qiime2 import Metadata
 from numpy.testing import assert_allclose
 from qiime2.plugins.sourcetracker2.actions import gibbs
+from sourcetracker._q2._visualizer import (barplot,
+                                           assignment_barplot)
 
 
 class Test_QIIME2_gibbs(unittest.TestCase):
@@ -96,11 +99,13 @@ class Test_QIIME2_gibbs(unittest.TestCase):
         for exmp_i, perams in self.examples.items():
             # get the tables input pth and out pth
             tbl_pth = os.path.join(tst_pth, 'data/tiny-test/otu_table.biom')
+            tax_pth = os.path.join(tst_pth, 'data/tiny-test/taxonomy.qza')
             mta_pth = os.path.join(
                 tst_pth, 'data/tiny-test', perams['mapping'])
             # import tables
             q2table = Artifact.import_data("FeatureTable[Frequency]",
                                            load_table(tbl_pth))
+            q2tax = Artifact.load(tax_pth)
             q2meta = Metadata(pd.read_csv(mta_pth,
                                           sep='\t',
                                           index_col=0))
@@ -123,6 +128,29 @@ class Test_QIIME2_gibbs(unittest.TestCase):
                                    source_column_value=scv_,
                                    sink_column_value=perams['sink_column_value'],
                                    source_category_column=scc_)
+            # run prop barplot
+            with tempfile.TemporaryDirectory() as output_dir:
+                barplot(output_dir,
+                        mp.view(pd.DataFrame),
+                        q2meta,
+                        scc_)
+                index_fp = os.path.join(output_dir, 'index.html')
+                self.assertTrue(os.path.exists(index_fp))
+            # run a per-sink prop
+            if perams['loo']:
+                per_ = 'drainwater'
+            else:
+                per_ = 's0'
+            with tempfile.TemporaryDirectory() as output_dir:
+                assignment_barplot(output_dir,
+                                   fas.view(pd.DataFrame),
+                                   q2tax.view(pd.DataFrame),
+                                   q2meta,
+                                   per_,
+                                   scc_)
+                index_fp = os.path.join(output_dir, 'index.html')
+                self.assertTrue(os.path.exists(index_fp))
+                                             
             # Get the underlying data from these artifacts
             res_mp = mp.view(Table).to_dataframe().T
             # check mixing proportions from cli
