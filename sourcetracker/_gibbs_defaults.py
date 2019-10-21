@@ -79,13 +79,13 @@ OUT_MEAN = ('The mixing_proporitions output is a table with sinks'
 OUT_STD = ('The mixing_proporitions_*stds* has the same format as '
            'mixing proporitions, but contains the standard deviation'
            ' of each fractional contribution.')
-OUT_PFA =  ('The feature table for each sink (or source if `--loo '
+OUT_PFA = ('The feature table for each sink (or source if `--loo '
            'is passed). This feature table contains the specific '
            ' of each fractional contribution.')
-DESC_FMAP =  ('Taxonomic annotations for features in the provided '
-              'feature table. All features in the feature table must'
-              'have a corresponding taxonomic annotation. Taxonomic '
-              'annotations that are not present in the feature table '
-              'will be ignored. ')
+DESC_FMAP = ('Taxonomic annotations for features in the provided '
+             'feature table. All features in the feature table must'
+             'have a corresponding taxonomic annotation. Taxonomic '
+             'annotations that are not present in the feature table '
+             'will be ignored. ')
 DESC_PVAL = ('The value of the sink (or source if `--loo` '
              'is passed) for the desired barplot visualization.')

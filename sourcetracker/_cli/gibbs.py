@@ -173,4 +173,4 @@ def gibbs(table_fp: Table,
 
     # Plot contributions.
     fig, ax = plot_heatmap(mpm.T)
-    fig.savefig(os.path.join(output_dir,'mixing_proportions.pdf'), dpi=300)
+    fig.savefig(os.path.join(output_dir, 'mixing_proportions.pdf'), dpi=300)

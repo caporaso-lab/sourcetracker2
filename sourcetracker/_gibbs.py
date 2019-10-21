@@ -63,19 +63,20 @@ def gibbs(feature_table: Table,
     # here we only return the three df (via q2)
     mpm, mps, fas = results
     # make list filter
-    filter_list = lambda inds, factor: [ind for ind in list(inds)
-                                        if ind not in factor]
+    def filter_list(inds, factor): return [ind for ind in list(inds)
+                                           if ind not in factor]
     # concat each sink-source (dropping sources with same name as sink)
-    fas_merged = pd.concat({sink:source.reindex(filter_list(source.index, sink))
+    fas_merged = pd.concat({sink: source.reindex(filter_list(source.index,
+                                                             sink))
                             for sink, source in zip(mpm.columns, fas)})
     # join the index
-    fas_merged.index = ['-'.join(map(str,i))
+    fas_merged.index = ['-'.join(map(str, i))
                         for i in fas_merged.index.tolist()]
     # output for QIIME2
     fas_merged = fas_merged.T
     fas_merged = Table(fas_merged.values,
-                    fas_merged.index,
-                    fas_merged.columns)
+                       fas_merged.index,
+                       fas_merged.columns)
     # this is because QIIME will only
     # support these for now
     # in the future we will work

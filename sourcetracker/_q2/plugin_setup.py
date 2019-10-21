@@ -112,7 +112,8 @@ plugin.visualizers.register_function(
                             'category_column': DESC_CAT},
     name='Visualize feature assignments with an interactive bar plot',
     description='This visualizer produces an interactive barplot visualization'
-                ' of the feature assignments. Interactive features include multi-level '
+                ' of the feature assignments. '
+                'Interactive features include multi-level '
                 'sorting, plot recoloring, sample relabeling, and SVG '
                 'figure export.'
 )
@@ -127,7 +128,8 @@ plugin.visualizers.register_function(
                             'category_column': DESC_CAT},
     name='Visualize feature assignments with an interactive bar plot',
     description='This visualizer produces an interactive barplot visualization'
-                ' of the feature assignments. Interactive features include multi-level '
+                ' of the feature assignments. '
+                'Interactive features include multi-level '
                 'sorting, plot recoloring, sample relabeling, and SVG '
                 'figure export.'
 )

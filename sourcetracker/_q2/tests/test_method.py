@@ -115,18 +115,21 @@ class Test_QIIME2_gibbs(unittest.TestCase):
             rss_ = perams['sink_rarefaction_depth']
             scv_ = perams['source_column_value']
             scc_ = perams['source_category_column']
+            draw_ = perams['draws_per_restart']
+            ssc_ = perams['source_sink_column']
+            sincv_ = perams['sink_column_value']
             mp, mpstd, fas = gibbs(q2table,
                                    q2meta,
                                    loo=perams['loo'],
                                    source_rarefaction_depth=rs_,
                                    sink_rarefaction_depth=rss_,
                                    restarts=perams['restarts'],
-                                   draws_per_restart=perams['draws_per_restart'],
+                                   draws_per_restart=draw_,
                                    burnin=perams['burnin'],
                                    delay=perams['delay'],
-                                   source_sink_column=perams['source_sink_column'],
+                                   source_sink_column=ssc_,
                                    source_column_value=scv_,
-                                   sink_column_value=perams['sink_column_value'],
+                                   sink_column_value=sincv_,
                                    source_category_column=scc_)
             # run prop barplot
             with tempfile.TemporaryDirectory() as output_dir:
@@ -150,7 +153,7 @@ class Test_QIIME2_gibbs(unittest.TestCase):
                                    scc_)
                 index_fp = os.path.join(output_dir, 'index.html')
                 self.assertTrue(os.path.exists(index_fp))
-                                             
+
             # Get the underlying data from these artifacts
             res_mp = mp.view(Table).to_dataframe().T
             # check mixing proportions from cli
