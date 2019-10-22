@@ -774,7 +774,8 @@ def gibbs(sources, sinks=None, alpha1=.001, alpha2=.1, beta=10, restarts=10,
     if sinks is None:
         cps_and_sinks = []
         for source in sources.index:
-            _sources = sources.select(lambda x: x != source)
+            # fix the deprecated pandas code
+            _sources = sources.loc[sources.index.map(lambda x: x != source)]
             cp = ConditionalProbability(alpha1, alpha2, beta, _sources.values)
             sink = sources.loc[source, :].values
             cps_and_sinks.append((cp, sink))
