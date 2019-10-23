@@ -11,7 +11,6 @@
 from __future__ import division
 
 import pandas as pd
-from qiime2 import Metadata
 from biom import Table
 from sourcetracker._sourcetracker import (intersect_and_sort_samples,
                                           get_samples, collapse_source_data,
@@ -29,7 +28,7 @@ from sourcetracker._gibbs_defaults import (DEFAULT_ALPH1, DEFAULT_ALPH2,
 
 
 def gibbs(feature_table: Table,
-          sample_metadata: Metadata,
+          sample_metadata: pd.DataFrame,
           loo: bool = DEFAULT_FLS,
           jobs: int = DEFAULT_ONE,
           alpha1: float = DEFAULT_ALPH1,
@@ -63,6 +62,7 @@ def gibbs(feature_table: Table,
     # here we only return the three df (via q2)
     mpm, mps, fas = results
     # make list filter
+
     def filter_list(inds, factor): return [ind for ind in list(inds)
                                            if ind not in factor]
     # concat each sink-source (dropping sources with same name as sink)
@@ -70,7 +70,7 @@ def gibbs(feature_table: Table,
                                                              sink))
                             for sink, source in zip(mpm.columns, fas)})
     # join the index
-    fas_merged.index = ['-'.join(map(str, i))
+    fas_merged.index = ['&?&?'.join(map(str, i))
                         for i in fas_merged.index.tolist()]
     # output for QIIME2
     fas_merged = fas_merged.T

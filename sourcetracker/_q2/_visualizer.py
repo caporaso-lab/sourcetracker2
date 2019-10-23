@@ -77,7 +77,7 @@ def assignment_barplot(output_dir: str,
     sample_metadata = sample_metadata.to_dataframe()
 
     # un-merge by the sink
-    feature_assignments['sink'] = [sink.split('-')[0]
+    feature_assignments['sink'] = [sink.split('&?&?')[0]
                                    for sink in feature_assignments.index]
     fas_unmerged = {sink: source_df.drop(['sink'], axis=1)
                     for sink, source_df in feature_assignments.groupby('sink')}
@@ -89,7 +89,7 @@ def assignment_barplot(output_dir: str,
     # grab sink and source
     source_df = fas_unmerged[per_value]
     # subset the sample metadata
-    keep_ = [cat.split('-')[1] for cat in source_df.index]
+    keep_ = [cat.split('&?&?')[1] for cat in source_df.index]
     source_df.index = keep_
     mf_sub = sample_metadata[sample_metadata[category_column].isin(keep_)]
     mf_sub = mf_sub.set_index(category_column)
