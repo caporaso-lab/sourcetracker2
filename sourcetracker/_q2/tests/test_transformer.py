@@ -1,8 +1,4 @@
 import pandas as pd
-import qiime2
-import numpy as np
-import pandas.util.testing as pdt
-from skbio.util import get_data_path
 from qiime2.plugin.testing import TestPluginBase
 from sourcetracker._q2._format import SinkSourceMapFormat
 
@@ -15,7 +11,7 @@ class TestSinkSourceMapFormatTransformers(TestPluginBase):
         transformer = self.get_transformer(pd.DataFrame, SinkSourceMapFormat)
 
         n = 4
-        sinks = ['sink%i' % j 
+        sinks = ['sink%i' % j
                  for j in range(n)
                  for i in range(n)]
         sources = ['source%i' % i

@@ -10,7 +10,7 @@ class SinkSourceMapFormat(model.TextFileFormat):
             comp_columns = list(header.split('\t'))[1:]
             # ensure both headers are present
             allowed_ = ['Source', 'Sink', 'Source_one', 'Source_two']
-            num_col = sum([str(i).replace('\n','') in allowed_
+            num_col = sum([str(i).replace('\n', '') in allowed_
                            for i in comp_columns])
             if num_col != 2:
                 raise ValidationError('Source or Sink columns are missing.'
@@ -20,7 +20,8 @@ class SinkSourceMapFormat(model.TextFileFormat):
                 cells = line.split('\t')
                 values_ = [is_str(cells[c].strip()) for c in [1, 2]]
                 if not all(values_):
-                    raise ValidationError('Non string values in source-sink map.')
+                    err_ = 'Non string values in source-sink map.'
+                    raise ValidationError(err_)
                 if n_records is not None and (line_number - 1) >= n_records:
                     break
 

@@ -71,7 +71,7 @@ def gibbs(feature_table: Table,
                             for sink, source in zip(mpm.columns, fas)})
     # if loo is True then columns are source-source
     if loo:
-        columns_ = ['Source_one','Source_two']
+        columns_ = ['Source_one', 'Source_two']
     # if loo is False then columns as sink-source
     else:
         columns_ = ['Sink', 'Source']
