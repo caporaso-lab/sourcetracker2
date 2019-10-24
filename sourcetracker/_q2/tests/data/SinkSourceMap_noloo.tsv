@@ -1,0 +1,10 @@
+sampleid	Source_one	Source_two
+sample0	drainwater	seawater
+sample1	drainwater	sewage
+sample2	drainwater	Unknown
+sample3	seawater	drainwater
+sample4	seawater	sewage
+sample5	seawater	Unknown
+sample6	sewage	drainwater
+sample7	sewage	seawater
+sample8	sewage	Unknown

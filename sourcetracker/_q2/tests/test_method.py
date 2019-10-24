@@ -118,19 +118,19 @@ class Test_QIIME2_gibbs(unittest.TestCase):
             draw_ = perams['draws_per_restart']
             ssc_ = perams['source_sink_column']
             sincv_ = perams['sink_column_value']
-            mp, mpstd, fas = gibbs(q2table,
-                                   q2meta,
-                                   loo=perams['loo'],
-                                   source_rarefaction_depth=rs_,
-                                   sink_rarefaction_depth=rss_,
-                                   restarts=perams['restarts'],
-                                   draws_per_restart=draw_,
-                                   burnin=perams['burnin'],
-                                   delay=perams['delay'],
-                                   source_sink_column=ssc_,
-                                   source_column_value=scv_,
-                                   sink_column_value=sincv_,
-                                   source_category_column=scc_)
+            mp, mpstd, fas, fasmf = gibbs(q2table,
+                                          q2meta,
+                                          loo=perams['loo'],
+                                          source_rarefaction_depth=rs_,
+                                          sink_rarefaction_depth=rss_,
+                                          restarts=perams['restarts'],
+                                          draws_per_restart=draw_,
+                                          burnin=perams['burnin'],
+                                          delay=perams['delay'],
+                                          source_sink_column=ssc_,
+                                          source_column_value=scv_,
+                                          sink_column_value=sincv_,
+                                          source_category_column=scc_)
             # run prop barplot
             with tempfile.TemporaryDirectory() as output_dir:
                 barplot(output_dir,
@@ -148,9 +148,8 @@ class Test_QIIME2_gibbs(unittest.TestCase):
                 assignment_barplot(output_dir,
                                    fas.view(pd.DataFrame),
                                    q2tax.view(pd.DataFrame),
-                                   q2meta,
-                                   per_,
-                                   scc_)
+                                   fasmf.view(pd.DataFrame),
+                                   per_)
                 index_fp = os.path.join(output_dir, 'index.html')
                 self.assertTrue(os.path.exists(index_fp))
 
