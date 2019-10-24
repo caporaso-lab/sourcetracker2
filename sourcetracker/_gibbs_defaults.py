@@ -89,3 +89,7 @@ DESC_FMAP = ('Taxonomic annotations for features in the provided '
              'will be ignored. ')
 DESC_PVAL = ('The value of the sink (or source if `--loo` '
              'is passed) for the desired barplot visualization.')
+OUT_PFAM = ('The mapping file to the per feature table for each '
+            'sink (or source if `--loo is passed). '
+            'This feature table contains the specific '
+            ' of each fractional contribution.')

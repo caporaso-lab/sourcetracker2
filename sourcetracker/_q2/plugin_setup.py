@@ -8,18 +8,24 @@
 # The full license is in the file LICENSE, distributed with this software.
 # ----------------------------------------------------------------------------
 
+import importlib
 import qiime2.plugin
 from sourcetracker import __version__
 from qiime2.plugin import (Int, Float,
                            Metadata, Str,
                            Bool, Choices)
-from q2_types.feature_table import (FeatureTable, Frequency,
+from q2_types.feature_table import (FeatureTable,
+                                    Frequency,
                                     RelativeFrequency)
-from q2_types.feature_data import (FeatureData, Taxonomy)
+from q2_types.feature_data import (FeatureData,
+                                   Taxonomy)
 from sourcetracker._gibbs import gibbs
-from sourcetracker._q2._visualizer import assignment_barplot, barplot
-
-# import default descriptions
+from sourcetracker._q2._visualizer import (assignment_barplot,
+                                           barplot)
+# import descriptions
+from ._type import SinkSourceMap
+from ._format import SinkSourceMapDirectoryFormat
+from q2_types.sample_data import SampleData
 from sourcetracker._gibbs_defaults import (DESC_TBL, DESC_MAP, DESC_FMAP,
                                            DESC_LOO, DESC_JBS, DESC_ALPH1,
                                            DESC_ALPH2, DESC_BTA, DESC_RAF1,
@@ -27,7 +33,8 @@ from sourcetracker._gibbs_defaults import (DESC_TBL, DESC_MAP, DESC_FMAP,
                                            DESC_BRN, DESC_DLY, DESC_PFA,
                                            DESC_RPL, DESC_SNK, DESC_SRS,
                                            DESC_SRS2, DESC_CAT, OUT_MEAN,
-                                           OUT_STD, OUT_PFA, DESC_PVAL)
+                                           OUT_STD, OUT_PFA, DESC_PVAL,
+                                           OUT_PFAM)
 
 PARAMETERS = {'sample_metadata': Metadata,
               'loo': Bool,
@@ -86,12 +93,14 @@ plugin.methods.register_function(
     parameters=PARAMETERS,
     outputs=[('mixing_proportions', FeatureTable[RelativeFrequency]),
              ('mixing_proportion_stds', FeatureTable[RelativeFrequency]),
-             ('per_sink_assignments', FeatureTable[RelativeFrequency])],
+             ('per_sink_assignments', FeatureTable[RelativeFrequency]),
+             ('per_sink_assignments_map', SampleData[SinkSourceMap])],
     input_descriptions={'feature_table': DESC_TBL},
     parameter_descriptions=PARAMETERDESC,
     output_descriptions={'mixing_proportions': OUT_MEAN,
                          'mixing_proportion_stds': OUT_STD,
-                         'per_sink_assignments': OUT_PFA},
+                         'per_sink_assignments': OUT_PFA,
+                         'per_sink_assignments_map': OUT_PFAM},
     name='sourcetracker2 gibbs',
     description=('SourceTracker2 is a highly parallel version of '
                  'SourceTracker that was originally described in'
@@ -101,15 +110,13 @@ plugin.methods.register_function(
 plugin.visualizers.register_function(
     function=assignment_barplot,
     inputs={'feature_assignments': FeatureTable[RelativeFrequency],
-            'feature_metadata': FeatureData[Taxonomy]},
-    parameters={'sample_metadata': Metadata,
-                'per_value': Str,
-                'category_column': Str},
+            'feature_metadata': FeatureData[Taxonomy],
+            'assignments_map': SampleData[SinkSourceMap]},
+    parameters={'per_value': Str},
     input_descriptions={'feature_assignments': OUT_PFA,
-                        'feature_metadata': DESC_FMAP},
-    parameter_descriptions={'sample_metadata': DESC_MAP,
-                            'per_value': DESC_PVAL,
-                            'category_column': DESC_CAT},
+                        'feature_metadata': DESC_FMAP,
+                        'assignments_map': OUT_PFAM},
+    parameter_descriptions={'per_value': DESC_PVAL},
     name='Visualize feature assignments with an interactive bar plot',
     description='This visualizer produces an interactive barplot visualization'
                 ' of the feature assignments. '
@@ -133,3 +140,10 @@ plugin.visualizers.register_function(
                 'sorting, plot recoloring, sample relabeling, and SVG '
                 'figure export.'
 )
+
+plugin.register_semantic_types(SinkSourceMap)
+plugin.register_semantic_type_to_format(
+    SampleData[SinkSourceMap],
+    artifact_format=SinkSourceMapDirectoryFormat)
+plugin.register_formats(SinkSourceMapDirectoryFormat)
+importlib.import_module('sourcetracker._q2._transformer')

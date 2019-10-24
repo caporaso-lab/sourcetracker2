@@ -69,36 +69,26 @@ def barplot(output_dir: str,
 def assignment_barplot(output_dir: str,
                        feature_assignments: pd.DataFrame,
                        feature_metadata: pd.DataFrame,
-                       sample_metadata: Metadata,
-                       per_value: str,
-                       category_column: str = DEFAULT_CAT) -> None:
+                       assignments_map: pd.DataFrame,
+                       per_value: str) -> None:
 
-    # scriptable metadata
-    sample_metadata = sample_metadata.to_dataframe()
-
-    # un-merge by the sink
-    feature_assignments['sink'] = [sink.split('&?&?')[0]
-                                   for sink in feature_assignments.index]
-    fas_unmerged = {sink: source_df.drop(['sink'], axis=1)
-                    for sink, source_df in feature_assignments.groupby('sink')}
-
-    if per_value not in fas_unmerged.keys():
-        allowed_ = ', '.join(fas_unmerged.keys())
+    # subset metadata by per_value
+    sub_col = assignments_map.columns[0]
+    # check per value is in set of allowed
+    allowed_ = set(assignments_map[sub_col].values)
+    if per_value not in allowed_:
+        allowed_ = ', '.join(list(allowed_))
         raise ValueError('The value given %s is not valid. Please choose from'
                          ' one of the following: %s' % (per_value, allowed_))
-    # grab sink and source
-    source_df = fas_unmerged[per_value]
-    # subset the sample metadata
-    keep_ = [cat.split('&?&?')[1] for cat in source_df.index]
-    source_df.index = keep_
-    mf_sub = sample_metadata[sample_metadata[category_column].isin(keep_)]
-    mf_sub = mf_sub.set_index(category_column)
-    mf_sub = mf_sub.loc[~mf_sub.index.duplicated(keep='first')]
-    mf_sub.loc['Unknown', :] = 'Unknown'
-    mf_sub.index.name = 'sampleid'
+
+    # subet sample metadata
+    keep_ = assignments_map[sub_col].isin([per_value])
+    assignments_map = assignments_map[keep_]
+    sub_ = list(assignments_map.index)
+    assignments_map.index.name = 'sampleid'
 
     # make barplot
     _barplot(output_dir,
-             source_df,
+             feature_assignments.loc[sub_, :],
              pd.Series(feature_metadata.Taxon),
-             Metadata(mf_sub))
+             Metadata(assignments_map))

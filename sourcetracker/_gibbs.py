@@ -46,7 +46,7 @@ def gibbs(feature_table: Table,
           source_column_value: str = DEFAULT_SRS,
           sink_column_value: str = DEFAULT_SRS2,
           source_category_column: str = DEFAULT_CAT)\
-              -> (pd.DataFrame, pd.DataFrame, Table):
+              -> (pd.DataFrame, pd.DataFrame, Table, pd.DataFrame):
     # convert tables
     feature_table = biom_to_df(feature_table)
     sample_metadata = sample_metadata.to_dataframe()
@@ -69,19 +69,27 @@ def gibbs(feature_table: Table,
     fas_merged = pd.concat({sink: source.reindex(filter_list(source.index,
                                                              sink))
                             for sink, source in zip(mpm.columns, fas)})
-    # join the index
-    fas_merged.index = ['&?&?'.join(map(str, i))
-                        for i in fas_merged.index.tolist()]
+    # if loo is True then columns are source-source
+    if loo:
+        columns_ = ['Source_one','Source_two']
+    # if loo is False then columns as sink-source
+    else:
+        columns_ = ['Sink', 'Source']
+    # make the index map and mapping in the same step
+    ss_map = {'sample%i' % i: list(map(str, v))
+              for i, v in enumerate(fas_merged.index.tolist())}
+    ss_map = pd.DataFrame(ss_map, columns_).T
+    ss_map.index.name = 'sampleid'
     # output for QIIME2
-    fas_merged = fas_merged.T
-    fas_merged = Table(fas_merged.values,
-                       fas_merged.index,
-                       fas_merged.columns)
+    fas_merged.index = ss_map.index
+    fas_merged = Table(fas_merged.T.values,
+                       fas_merged.T.index,
+                       fas_merged.T.columns)
     # this is because QIIME will only
     # support these for now
     # in the future we will work
     # on supporting collections (i.e. fas)
-    return mpm, mps, fas_merged
+    return mpm, mps, fas_merged, ss_map
 
 
 def gibbs_helper(feature_table: Table,
