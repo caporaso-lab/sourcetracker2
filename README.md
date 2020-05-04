@@ -28,7 +28,7 @@ must be integer counts.
 
 The sample metadata file is an `sXk` table (`s` rows, `k` columns) with sample IDs in
 the first column, and metadata headers in the first row. The values in each 'cell' of the
-table can be any type of data, and respresent information about each sample.
+table can be any type of data, and represent information about each sample.
 
 Any feature table that can be read by the `biom-format >= 2.1.4` package will be
 acceptable input. For example file formats please look at the test mapping file
