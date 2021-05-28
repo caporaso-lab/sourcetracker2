@@ -76,7 +76,7 @@ PARAMETERDESC = {'sample_metadata': DESC_MAP,
                  'source_category_column': DESC_CAT}
 
 citations = qiime2.plugin.Citations.load(
-    '_q2/citations.bib', package='sourcetracker')
+    'citations.bib', package='sourcetracker')
 
 plugin = qiime2.plugin.Plugin(
     name='sourcetracker2',
