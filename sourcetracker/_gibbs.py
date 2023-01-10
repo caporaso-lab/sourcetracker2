@@ -47,7 +47,6 @@ def gibbs(feature_table: Table,
           source_category_column: str = DEFAULT_CAT)\
               -> (pd.DataFrame, pd.DataFrame, Table, pd.DataFrame):
     # convert tables
-    feature_table = feature_table
     sample_metadata = sample_metadata.to_dataframe()
     # run the gibbs sampler helper function (same used for q2)
     results = gibbs_helper(feature_table, sample_metadata, loo, jobs,
