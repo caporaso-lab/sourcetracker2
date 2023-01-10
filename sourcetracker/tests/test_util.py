@@ -18,7 +18,7 @@ import numpy as np
 import pandas as pd
 import pandas.util.testing as pdt
 
-from sourcetracker._util import parse_sample_metadata, biom_to_df
+from sourcetracker._util import parse_sample_metadata
 
 
 class ParseSampleMetadata(unittest.TestCase):
@@ -30,21 +30,6 @@ class ParseSampleMetadata(unittest.TestCase):
                                 index=pd.Index(['01', '00'], name='#SampleID'),
                                 columns=['Col1', 'Col2'])
         pdt.assert_frame_equal(observed, expected)
-
-
-class BiomToDF(unittest.TestCase):
-
-    def test_convert(self):
-        exp = pd.DataFrame(np.arange(200).reshape(20, 10).astype(np.float64).T,
-                           index=['s%s' % i for i in range(10)],
-                           columns=['o%s' % i for i in range(20)])
-
-        data = np.arange(200).reshape(20, 10).astype(np.float64)
-        oids = ['o%s' % i for i in range(20)]
-        sids = ['s%s' % i for i in range(10)]
-
-        obs = biom_to_df(Table(data, oids, sids))
-        pd.util.testing.assert_frame_equal(obs, exp)
 
 
 if __name__ == "__main__":

@@ -17,7 +17,6 @@ from sourcetracker._sourcetracker import (intersect_and_sort_samples,
                                           subsample_dataframe,
                                           validate_gibbs_input)
 from sourcetracker._sourcetracker import gibbs as _gibbs
-from sourcetracker._util import biom_to_df
 # import default values
 from sourcetracker._gibbs_defaults import (DEFAULT_ALPH1, DEFAULT_ALPH2,
                                            DEFAULT_TEN, DEFAULT_ONE,
@@ -48,7 +47,7 @@ def gibbs(feature_table: Table,
           source_category_column: str = DEFAULT_CAT)\
               -> (pd.DataFrame, pd.DataFrame, Table, pd.DataFrame):
     # convert tables
-    feature_table = biom_to_df(feature_table)
+    feature_table = feature_table
     sample_metadata = sample_metadata.to_dataframe()
     # run the gibbs sampler helper function (same used for q2)
     results = gibbs_helper(feature_table, sample_metadata, loo, jobs,
@@ -118,8 +117,6 @@ def gibbs_helper(feature_table: Table,
     This function is a helper that applies to both the click and QIIME2
     command line functionality.
     '''
-
-    # Do high level check on feature data.
     feature_table = validate_gibbs_input(feature_table)
 
     # Remove samples not shared by both feature and metadata tables and order
@@ -150,10 +147,10 @@ def gibbs_helper(feature_table: Table,
 
     # Rarify collapsed source data if requested.
     if source_rarefaction_depth > 0:
-        d = (csources.sum(1) >= source_rarefaction_depth)
+        d = (csources.sum('sample') >= source_rarefaction_depth)
         if not d.all():
             count_too_shallow = (~d).sum()
-            shallowest = csources.sum(1).min()
+            shallowest = csources.sum('sample').min()
             raise ValueError(('You requested rarefaction of source samples at '
                               '%s, but there are %s collapsed source samples '
                               'that have less sequences than that. The '
@@ -161,18 +158,18 @@ def gibbs_helper(feature_table: Table,
                              (source_rarefaction_depth, count_too_shallow,
                               shallowest))
         else:
-            csources = subsample_dataframe(csources, source_rarefaction_depth,
-                                           replace=sample_with_replacement)
+            csources = csources.subsample(source_rarefaction_depth,
+                                          with_replacement=sample_with_replacement)  # noqa
 
     # Prepare to rarify sink data if we are not doing LOO. If we are doing loo,
     # we skip the rarefaction, and set sinks to `None`.
     if not loo:
-        sinks = feature_table.loc[sink_samples, :]
+        sinks = feature_table.filter(set(sink_samples), inplace=False)
         if sink_rarefaction_depth > 0:
-            d = (sinks.sum(1) >= sink_rarefaction_depth)
+            d = (sinks.sum('sample') >= sink_rarefaction_depth)
             if not d.all():
                 count_too_shallow = (~d).sum()
-                shallowest = sinks.sum(1).min()
+                shallowest = sinks.sum('sample').min()
                 raise ValueError(('You requested rarefaction of sink samples '
                                   'at %s, but there are %s sink samples that '
                                   'have less sequences than that. The '
@@ -180,8 +177,8 @@ def gibbs_helper(feature_table: Table,
                                  (sink_rarefaction_depth, count_too_shallow,
                                   shallowest))
             else:
-                sinks = subsample_dataframe(sinks, sink_rarefaction_depth,
-                                            replace=sample_with_replacement)
+                sinks = sinks.subsample(sink_rarefaction_depth,
+                                        with_replacement=sample_with_replacement)  # noqa
     else:
         sinks = None
 
