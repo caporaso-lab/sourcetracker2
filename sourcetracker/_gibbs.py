@@ -12,9 +12,9 @@ from __future__ import division
 
 import pandas as pd
 from biom import Table
+from scipy.sparse import csr_matrix
 from sourcetracker._sourcetracker import (intersect_and_sort_samples,
                                           get_samples, collapse_source_data,
-                                          subsample_dataframe,
                                           validate_gibbs_input)
 from sourcetracker._sourcetracker import gibbs as _gibbs
 # import default values
@@ -91,6 +91,18 @@ def gibbs(feature_table: Table,
     return mpm, mps, fas_merged, ss_map
 
 
+def subsample(table, depth, replacement):
+    """Ensure all samples are present in the resulting table"""
+    all_feat = table.ids(axis='observation')
+    ss = table.subsample(depth, with_replacement=replacement)
+    missing_feat = set(all_feat) - set(ss.ids(axis='observation'))
+    zerod_feat = Table(csr_matrix((len(missing_feat), len(table.ids()))),
+                       list(missing_feat),
+                       list(table.ids()))
+    newtab = ss.concat(zerod_feat, axis='observation')
+    return newtab.sort_order(all_feat, axis='observation')
+
+
 def gibbs_helper(feature_table: Table,
                  sample_metadata: pd.DataFrame,
                  loo: bool,
@@ -158,9 +170,9 @@ def gibbs_helper(feature_table: Table,
                              (source_rarefaction_depth, count_too_shallow,
                               shallowest))
         else:
-            csources = csources.subsample(source_rarefaction_depth,
-                                          with_replacement=sample_with_replacement)  # noqa
-
+            csources = subsample(csources,
+                                 source_rarefaction_depth,
+                                 sample_with_replacement)
     # Prepare to rarify sink data if we are not doing LOO. If we are doing loo,
     # we skip the rarefaction, and set sinks to `None`.
     if not loo:
@@ -177,8 +189,9 @@ def gibbs_helper(feature_table: Table,
                                  (sink_rarefaction_depth, count_too_shallow,
                                   shallowest))
             else:
-                sinks = sinks.subsample(sink_rarefaction_depth,
-                                        with_replacement=sample_with_replacement)  # noqa
+                sinks = subsample(sinks,
+                                  sink_rarefaction_depth,
+                                  sample_with_replacement)  # noqa
     else:
         sinks = None
 

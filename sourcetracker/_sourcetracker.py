@@ -129,7 +129,6 @@ def intersect_and_sort_samples(sample_metadata, feature_table):
         s_metadata = sample_metadata.loc[shared_samples].copy()
         s_features = feature_table.filter(set(shared_samples),
                                           inplace=False)
-        s_features = s_features.remove_empty()
         s_features = s_features.sort_order(shared_samples)
     return s_metadata, s_features
 
@@ -208,7 +207,7 @@ def collapse_source_data(sample_metadata, feature_table, source_samples,
     sources = sample_metadata.loc[source_samples, :]
     overlap = set(sources.index) & set(feature_table.ids())
     table = feature_table.filter(overlap,
-                                 inplace=False).remove_empty()
+                                 inplace=False)
     collapse_mapping = sources[category].to_dict()
     def collapse_f(i, m):
         return collapse_mapping[i]
