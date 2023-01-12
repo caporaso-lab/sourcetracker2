@@ -1057,8 +1057,8 @@ class TestGibbs(TestCase):
                               [0, 0, 0, 0, 0, 0],
                               [5, 9, 4, 7, 15, 9]])
         fts_vals = [fts0_vals, fts1_vals, fts2_vals, fts3_vals]
-        exp_fts = [dtot(pd.DataFrame(vals, index=source_names + ['Unknown'],
-                   columns=feature_names)) for vals in fts_vals]
+        exp_fts = [pd.DataFrame(vals, index=source_names + ['Unknown'],
+                   columns=feature_names) for vals in fts_vals]
 
         pd.util.testing.assert_frame_equal(obs_mpm, exp_mpm)
         pd.util.testing.assert_frame_equal(obs_mps, exp_mps)

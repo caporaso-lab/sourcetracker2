@@ -91,7 +91,7 @@ def gibbs(feature_table: Table,
 
 
 def subsample(table, depth, replacement):
-    """Ensure all samples are present in the resulting table"""
+    """Ensure all features are present in the resulting table"""
     all_feat = table.ids(axis='observation')
     ss = table.subsample(depth, with_replacement=replacement)
     missing_feat = set(all_feat) - set(ss.ids(axis='observation'))
@@ -150,11 +150,16 @@ def gibbs_helper(feature_table: Table,
                           'the help documentation and check your mapping '
                           'file.') % (source_sink_column, source_column_value))
 
-    # Prepare the 'sources' matrix by collapsing the `source_samples` by their
-    # metadata values.
-    csources = collapse_source_data(sample_metadata, feature_table,
-                                    source_samples, source_category_column,
-                                    'mean')
+    if loo:
+        # sources are not collapsed for LOO
+        csources = feature_table.filter(set(source_samples),
+                                        inplace=False).remove_empty()
+    else:
+        # Prepare the 'sources' matrix by collapsing the `source_samples` by
+        # their metadata values.
+        csources = collapse_source_data(sample_metadata, feature_table,
+                                        source_samples, source_category_column,
+                                        'mean')
 
     # Rarify collapsed source data if requested.
     if source_rarefaction_depth > 0:
