@@ -585,7 +585,8 @@ def _gibbs_loo(cp_and_sink, restarts, draws_per_restart, burnin, delay):
 
 def gibbs(sources, sinks=None, alpha1=.001, alpha2=.1, beta=10, restarts=10,
           draws_per_restart=1, burnin=100, delay=1, jobs=1,
-          create_feature_tables=True):
+          create_feature_tables=True, sample_metadata=None,
+          source_category_column=None):
     '''Gibb's sampling API.
 
     Notes
@@ -749,12 +750,21 @@ def gibbs(sources, sinks=None, alpha1=.001, alpha2=.1, beta=10, restarts=10,
     # Run LOO predictions on `sources`.
     if sinks is None:
         cps_and_sinks = []
+        loo_ids = sorted(sample_metadata[source_category_column].unique())
         for source in sources.ids():
             # fix the deprecated pandas code
-            _sources = sources.filter(set(sources.ids()) - {source, },
-                                      inplace=False)
+            without = set(sources.ids()) - {source, }
+            _sources = sources.filter(without, inplace=False)
+
+            if sample_metadata is None:
+                csources = _sources
+            else:
+                csources = collapse_source_data(sample_metadata, _sources,
+                                                list(without),
+                                                source_category_column,
+                                                'mean')
             cp = ConditionalProbability(alpha1, alpha2, beta,
-                                        _sources.matrix_data.T)
+                                        csources.matrix_data.T)
             sink = sources.filter({source, }, inplace=False).matrix_data.T.toarray()[0]
             cps_and_sinks.append((cp, sink))
 
@@ -766,6 +776,7 @@ def gibbs(sources, sinks=None, alpha1=.001, alpha2=.1, beta=10, restarts=10,
 
     # Run normal prediction on `sinks`.
     else:
+        loo_ids = None
         cp = ConditionalProbability(alpha1, alpha2, beta,
                                     sources.matrix_data.T)
         f = partial(gibbs_sampler, cp=cp, **kwargs)
@@ -780,7 +791,8 @@ def gibbs(sources, sinks=None, alpha1=.001, alpha2=.1, beta=10, restarts=10,
                                  [i[2] for i in results],
                                  sinks.ids(), sources.ids(),
                                  sources.ids(axis='observation'),
-                                 create_feature_tables, loo=loo)
+                                 create_feature_tables, loo=loo,
+                                 loo_ids=loo_ids)
 
 
 def cumulative_proportions(all_envcounts, sink_ids, source_ids):
@@ -880,7 +892,8 @@ def single_sink_feature_table(final_env_assignments, final_taxon_assignments,
 
 def collate_gibbs_results(all_envcounts, all_env_assignments,
                           all_taxon_assignments, sink_ids, source_ids,
-                          feature_ids, create_feature_tables, loo):
+                          feature_ids, create_feature_tables, loo,
+                          loo_ids=None):
     '''Collate `gibbs_sampler` output, optionally including feature tables.
 
     Parameters
@@ -930,34 +943,7 @@ def collate_gibbs_results(all_envcounts, all_env_assignments,
     '''
     if loo:
         props, props_stds = cumulative_proportions(all_envcounts, source_ids,
-                                                   source_ids[:-1])
-        # The source_ids for each environment are different. Specifically, the
-        # ith row of `props` and `props_stds` must have a 0 value inserted at
-        # the ith position to reflect the fact that the ith source was held out
-        # (it was the sink during that iteration). To do this we can imagine
-        # breaking the nXn array returned by `cumulative_proportions`, and
-        # inserting it into an nXn+1 array, with the missing cells on the
-        # diagonal of the nXn+1 array.
-        nrows = len(source_ids)
-        ncols = nrows + 1
-        new_source_ids = list(source_ids)+['Unknown']
-        new_data = np.zeros((nrows, ncols), dtype=np.float64)
-        new_data_std = np.zeros((nrows, ncols), dtype=np.float64)
-
-        new_data[np.triu_indices(ncols, 1)] = \
-            props.values[np.triu_indices(ncols - 1, 0)]
-        new_data[np.tril_indices(ncols - 1, -1, ncols)] = \
-            props.values[np.tril_indices(ncols - 1, -1)]
-
-        new_data_std[np.triu_indices(ncols, 1)] = \
-            props_stds.values[np.triu_indices(ncols - 1, 0)]
-        new_data_std[np.tril_indices(ncols - 1, -1, ncols)] = \
-            props_stds.values[np.tril_indices(ncols - 1, -1)]
-
-        props = pd.DataFrame(new_data, index=source_ids,
-                             columns=new_source_ids)
-        props_stds = pd.DataFrame(new_data_std, index=source_ids,
-                                  columns=new_source_ids)
+                                                   loo_ids)
 
         if create_feature_tables:
             fts = []

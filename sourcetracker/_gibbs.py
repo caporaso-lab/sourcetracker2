@@ -202,7 +202,9 @@ def gibbs_helper(feature_table: Table,
     # Run the computations.
     mpm, mps, fas = _gibbs(csources, sinks, alpha1, alpha2, beta, restarts,
                            draws_per_restart, burnin, delay, jobs,
-                           create_feature_tables=per_sink_feature_assignments)
+                           create_feature_tables=per_sink_feature_assignments,
+                           sample_metadata=sample_metadata,
+                           source_category_column=source_category_column)
     # number of returns chnages based on flag
     # this was refactored for QIIME2
     # transpose to follow convention

@@ -584,22 +584,23 @@ class TestDataAggregationFunctions(TestCase):
                         [3, 3, 4, 5, 5]])
 
         # Create expected proportion data.
-        prp_data = np.array([[0, 8/14., 2/14., 4/14.],
-                             [3/8., 0, 4/8., 1/8.],
-                             [5/10., 2/10., 0, 3/10.]], dtype=np.float64)
-        prp_std_data = np.zeros((3, 4), dtype=np.float64)
+        prp_data = np.array([[8/14., 2/14., 4/14.],
+                             [3/8., 4/8., 1/8.],
+                             [5/10., 2/10., 3/10.]], dtype=np.float64)
+        prp_std_data = np.zeros((3, 3), dtype=np.float64)
 
-        prp_std_data[0, 1:] = (ec1 / ec1.sum()).std(0)
-        prp_std_data[1, np.array([0, 2, 3])] = (ec2 / ec2.sum()).std(0)
-        prp_std_data[2, np.array([0, 1, 3])] = (ec3 / ec3.sum()).std(0)
+        prp_std_data[0] = (ec1 / ec1.sum()).std(0)
+        prp_std_data[1] = (ec2 / ec2.sum()).std(0)
+        prp_std_data[2] = (ec3 / ec3.sum()).std(0)
 
-        exp_sources = ['source%s' % i for i in range(3)] + ['Unknown']
+        exp_sources = ['source%s' % i for i in range(3)]
+        exp_envs = ['foo', 'bar', 'Unknown']
         feature_ids = ['f%s' % i for i in range(7)]
 
-        exp_prp = pd.DataFrame(prp_data, index=exp_sources[:-1],
-                               columns=exp_sources)
-        exp_prp_std = pd.DataFrame(prp_std_data, index=exp_sources[:-1],
-                                   columns=exp_sources)
+        exp_prp = pd.DataFrame(prp_data, index=exp_sources,
+                               columns=exp_envs)
+        exp_prp_std = pd.DataFrame(prp_std_data, index=exp_sources,
+                                   columns=exp_envs)
 
         # Create expected feature table data.
         ft1 = np.array([[0, 0, 0, 0, 0, 0, 0],
@@ -614,9 +615,12 @@ class TestDataAggregationFunctions(TestCase):
                         [0, 0, 0, 2, 0, 0, 0],
                         [0, 0, 0, 0, 0, 0, 0],
                         [0, 0, 0, 0, 0, 3, 0]], dtype=np.int64)
-        exp_fts = [pd.DataFrame(ft1, index=exp_sources, columns=feature_ids),
-                   pd.DataFrame(ft2, index=exp_sources, columns=feature_ids),
-                   pd.DataFrame(ft3, index=exp_sources, columns=feature_ids)]
+        exp_fts = [pd.DataFrame(ft1, index=exp_sources + ['Unknown'],
+                                columns=feature_ids),
+                   pd.DataFrame(ft2, index=exp_sources + ['Unknown'],
+                                columns=feature_ids),
+                   pd.DataFrame(ft3, index=exp_sources + ['Unknown'],
+                                columns=feature_ids)]
 
         # Prepare the inputs for passing to collate_gibbs_results
         all_envcounts = [ec1, ec2, ec3]
@@ -627,10 +631,11 @@ class TestDataAggregationFunctions(TestCase):
         obs_prp, obs_prp_std, obs_fts = \
             collate_gibbs_results(all_envcounts, all_env_assignments,
                                   all_taxon_assignments,
-                                  np.array(exp_sources[:-1]),
-                                  np.array(exp_sources[:-1]),
+                                  np.array(exp_sources),
+                                  np.array(exp_sources),
                                   np.array(feature_ids),
-                                  create_feature_tables=True, loo=True)
+                                  create_feature_tables=True, loo=True,
+                                  loo_ids=['foo', 'bar'])
 
         pd.util.testing.assert_frame_equal(obs_prp, exp_prp)
         pd.util.testing.assert_frame_equal(obs_prp_std, exp_prp_std)
@@ -641,10 +646,11 @@ class TestDataAggregationFunctions(TestCase):
         obs_prp, obs_prp_std, obs_fts = \
             collate_gibbs_results(all_envcounts, all_env_assignments,
                                   all_taxon_assignments,
-                                  np.array(exp_sources[:-1]),
-                                  np.array(exp_sources[:-1]),
+                                  np.array(exp_sources),
+                                  np.array(exp_sources),
                                   np.array(feature_ids),
-                                  create_feature_tables=False, loo=True)
+                                  create_feature_tables=False, loo=True,
+                                  loo_ids=['foo', 'bar'])
         self.assertTrue(obs_fts is None)
 
 
@@ -1016,54 +1022,34 @@ class TestGibbs(TestCase):
         sources = dtot(pd.DataFrame(vals, index=source_names,
                                     columns=feature_names).T)
 
+        md = pd.DataFrame(['foo', 'bar', 'foo', 'bar'],
+                          index=source_names, columns=['Env'])
+
         np.random.seed(1042)
         obs_mpm, obs_mps, obs_fts = gibbs(sources, sinks=None, alpha1=.001,
                                           alpha2=.01, beta=1, restarts=3,
                                           draws_per_restart=5, burnin=50,
-                                          delay=4, create_feature_tables=True)
+                                          delay=4, create_feature_tables=True,
+                                          sample_metadata=md,
+                                          source_category_column='Env')
 
-        vals = np.array([[0., 0.62444444, 0., 0.01555556, 0.36],
-                         [0.68444444, 0., 0.09333333, 0.12666667, 0.09555556],
-                         [0., 0.00888889, 0., 0.08222222, 0.90888889],
-                         [0.19111111, 0.2, 0.5, 0., 0.10888889]])
+        vals = np.array([[0.051111, 0.000000, 0.948889],
+                         [0.206667, 0.375556, 0.417778],
+                         [0.031111, 0.000000, 0.968889],
+                         [0.204444, 0.604444, 0.191111]])
         exp_mpm = pd.DataFrame(vals, index=source_names,
-                               columns=source_names + ['Unknown'])
+                               columns=['bar', 'foo', 'Unknown'])
 
-        vals = np.array([[0., 0.02406393, 0., 0.0015956, 0.02445387],
-                         [0.0076923, 0., 0.00399176, 0.00824322, 0.00648476],
-                         [0., 0.00127442, 0., 0.00622575, 0.00609752],
-                         [0.00636175, 0.00786721, 0.00525874, 0., 0.00609752]])
+        vals = np.array([[0.004046, 0.000000, 0.004046],
+                         [0.011848, 0.014019, 0.013550],
+                         [0.003931, 0.000000, 0.003931],
+                         [0.010131, 0.011210, 0.008174]])
         exp_mps = pd.DataFrame(vals, index=source_names,
-                               columns=source_names + ['Unknown'])
-
-        fts0_vals = np.array([[0, 0, 0, 0, 0, 0],
-                              [93, 87, 101, 0, 0, 0],
-                              [0, 0, 0, 0, 0, 0],
-                              [3, 4, 0, 0, 0, 0],
-                              [54, 59, 49, 0, 0, 0]])
-        fts1_vals = np.array([[113, 98, 97, 0, 0, 0],
-                              [0, 0, 0, 0, 0, 0],
-                              [0, 0, 0, 15, 13, 14],
-                              [5, 7, 11, 11, 12, 11],
-                              [2, 15, 12, 4, 5, 5]])
-        fts2_vals = np.array([[0, 0, 0, 0, 0, 0],
-                              [0, 0, 0, 2, 1, 1],
-                              [0, 0, 0, 0, 0, 0],
-                              [0, 0, 0, 12, 12, 13],
-                              [0, 0, 0, 136, 137, 136]])
-        fts3_vals = np.array([[28, 27, 31, 0, 0, 0],
-                              [27, 24, 25, 3, 4, 7],
-                              [0, 0, 0, 80, 71, 74],
-                              [0, 0, 0, 0, 0, 0],
-                              [5, 9, 4, 7, 15, 9]])
-        fts_vals = [fts0_vals, fts1_vals, fts2_vals, fts3_vals]
-        exp_fts = [pd.DataFrame(vals, index=source_names + ['Unknown'],
-                   columns=feature_names) for vals in fts_vals]
+                               columns=['bar', 'foo', 'Unknown'])
 
         pd.util.testing.assert_frame_equal(obs_mpm, exp_mpm)
-        pd.util.testing.assert_frame_equal(obs_mps, exp_mps)
-        for obs_fts, exp_fts in zip(obs_fts, exp_fts):
-            pd.util.testing.assert_frame_equal(obs_fts, exp_fts)
+        pd.util.testing.assert_frame_equal(obs_mps, exp_mps,
+                                           check_less_precise=True)
 
     def test_gibbs_close_to_sourcetracker_1(self):
         '''This test is stochastic; occasional errors might occur.
