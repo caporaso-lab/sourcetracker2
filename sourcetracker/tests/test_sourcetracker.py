@@ -13,10 +13,11 @@ from unittest import TestCase, main
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import biom
+from scipy.sparse import csr_matrix
 
 from sourcetracker._sourcetracker import (intersect_and_sort_samples,
                                           collapse_source_data,
-                                          subsample_dataframe,
                                           validate_gibbs_input,
                                           validate_gibbs_parameters,
                                           collate_gibbs_results,
@@ -29,6 +30,9 @@ from sourcetracker._sourcetracker import (intersect_and_sort_samples,
 from sourcetracker._plot import plot_heatmap
 
 
+def dtot(df):
+    return biom.Table(df.values, df.index, df.columns)
+
 class TestValidateGibbsInput(TestCase):
 
     def setUp(self):
@@ -38,138 +42,89 @@ class TestValidateGibbsInput(TestCase):
     def test_no_errors_(self):
         # A table where nothing is wrong, no changes expected.
         data = np.random.randint(0, 10, size=20).reshape(5, 4)
-        sources = pd.DataFrame(data.astype(np.int32), index=self.index,
-                               columns=self.columns)
-        exp_sources = pd.DataFrame(data.astype(np.int32), index=self.index,
-                                   columns=self.columns)
+        sources = dtot(pd.DataFrame(data.astype(np.int32), index=self.index,
+                                    columns=self.columns))
+        exp_sources = dtot(pd.DataFrame(data.astype(np.int32), index=self.index,
+                                        columns=self.columns))
         obs = validate_gibbs_input(sources)
-        pd.util.testing.assert_frame_equal(obs, sources)
+        self.assertEqual(obs, sources)
 
         # Sources and sinks.
-        sinks = pd.DataFrame(data, index=self.index, columns=self.columns)
-        exp_sinks = pd.DataFrame(data.astype(np.int32), index=self.index,
-                                 columns=self.columns)
+        sinks = dtot(pd.DataFrame(data, index=self.index, columns=self.columns))
+        exp_sinks = dtot(pd.DataFrame(data.astype(np.int32), index=self.index,
+                                      columns=self.columns))
         obs_sources, obs_sinks = validate_gibbs_input(sources, sinks)
-        pd.util.testing.assert_frame_equal(obs_sources, exp_sources)
-        pd.util.testing.assert_frame_equal(obs_sinks, exp_sinks)
-
-    def test_float_data(self):
-        # Data is float, expect rounding.
-        data = np.random.uniform(0, 1, size=20).reshape(5, 4)
-        sources = pd.DataFrame(data, index=self.index, columns=self.columns)
-        exp_sources = pd.DataFrame(np.zeros(20).reshape(5, 4).astype(np.int32),
-                                   index=self.index, columns=self.columns)
-        obs_sources = validate_gibbs_input(sources)
-        pd.util.testing.assert_frame_equal(obs_sources, exp_sources)
-
-        data = np.random.uniform(0, 1, size=20).reshape(5, 4) + 1.
-        sources = pd.DataFrame(data, index=self.index, columns=self.columns)
-        exp_sources = pd.DataFrame(np.ones(20).reshape(5, 4).astype(np.int32),
-                                   index=self.index, columns=self.columns)
-        obs_sources = validate_gibbs_input(sources)
-        pd.util.testing.assert_frame_equal(obs_sources, exp_sources)
-
-        # Sources and sinks.
-        data = np.random.uniform(0, 1, size=20).reshape(5, 4) + 5
-        sinks = pd.DataFrame(data,
-                             index=self.index,
-                             columns=self.columns)
-        exp_sinks = \
-            pd.DataFrame(5 * np.ones(20).reshape(5, 4).astype(np.int32),
-                         index=self.index,
-                         columns=self.columns)
-        obs_sources, obs_sinks = validate_gibbs_input(sources, sinks)
-        pd.util.testing.assert_frame_equal(obs_sources, exp_sources)
-        pd.util.testing.assert_frame_equal(obs_sinks, exp_sinks)
+        self.assertEqual(obs_sources, exp_sources)
+        self.assertEqual(obs_sinks, exp_sinks)
 
     def test_negative_data(self):
         # Values less than 0, expect errors.
         data = np.random.uniform(0, 1, size=20).reshape(5, 4) - 1.
-        sources = pd.DataFrame(data,
+        sources = dtot(pd.DataFrame(data,
                                index=self.index,
-                               columns=self.columns)
+                               columns=self.columns))
         self.assertRaises(ValueError, validate_gibbs_input, sources)
 
         data = -1 * np.random.randint(0, 20, size=20).reshape(5, 4)
-        sources = pd.DataFrame(data,
+        sources = dtot(pd.DataFrame(data,
                                index=self.index,
-                               columns=self.columns)
+                               columns=self.columns))
         self.assertRaises(ValueError, validate_gibbs_input, sources)
 
         # Sources and sinks.
         data = np.random.randint(0, 10, size=20).reshape(5, 4) + 1
-        sources = pd.DataFrame(data.astype(np.int32),
+        sources = dtot(pd.DataFrame(data.astype(np.int32),
                                index=self.index,
-                               columns=self.columns)
-        sinks = pd.DataFrame(-10 * data,
+                               columns=self.columns))
+        sinks = dtot(pd.DataFrame(-10 * data,
                              index=self.index,
-                             columns=self.columns)
+                             columns=self.columns))
         self.assertRaises(ValueError, validate_gibbs_input, sources, sinks)
 
     def test_nan_data(self):
         # nans, expect errors.
         data = np.random.uniform(0, 1, size=20).reshape(5, 4)
         data[3, 2] = np.nan
-        sources = pd.DataFrame(data,
+        sources = dtot(pd.DataFrame(data,
                                index=self.index,
-                               columns=self.columns)
+                               columns=self.columns))
         self.assertRaises(ValueError, validate_gibbs_input, sources)
 
         # Sources and sinks.
         data = np.random.randint(0, 10, size=20).reshape(5, 4) + 1.
-        sources = pd.DataFrame(data,
+        sources = dtot(pd.DataFrame(data,
                                index=self.index,
-                               columns=self.columns)
+                               columns=self.columns))
         data[1, 3] = np.nan
-        sinks = pd.DataFrame(data,
+        sinks = dtot(pd.DataFrame(data,
                              index=self.index,
-                             columns=self.columns)
-        self.assertRaises(ValueError, validate_gibbs_input, sources, sinks)
-
-    def test_non_numeric_data(self):
-        # data contains at least some non-numeric columns, expect errors.
-        data = np.random.randint(0, 10, size=20).reshape(5, 4)
-        sources = pd.DataFrame(data.astype(np.int32),
-                               index=self.index,
-                               columns=self.columns)
-        sources.iloc[2, 2] = '3.a'
-        self.assertRaises(ValueError, validate_gibbs_input, sources)
-
-        # Sources and sinks.
-        data = np.random.randint(0, 10, size=20).reshape(5, 4)
-        sources = pd.DataFrame(data.astype(np.int32),
-                               index=self.index,
-                               columns=self.columns)
-        sinks = pd.DataFrame(data.astype(np.int32),
-                             index=self.index,
-                             columns=self.columns)
-        sinks.iloc[2, 2] = '3'
+                             columns=self.columns))
         self.assertRaises(ValueError, validate_gibbs_input, sources, sinks)
 
     def test_columns_identical(self):
         # Columns are identical, no error expected.
         data = np.random.randint(0, 10, size=20).reshape(5, 4)
-        sources = pd.DataFrame(data.astype(np.int32),
+        sources = dtot(pd.DataFrame(data.astype(np.int32),
                                index=self.index,
-                               columns=self.columns)
+                               columns=self.columns).T)
         data = np.random.randint(0, 10, size=200).reshape(50, 4)
-        sinks = pd.DataFrame(data.astype(np.int32),
+        sinks = dtot(pd.DataFrame(data.astype(np.int32),
                              index=['s%s' % i for i in range(50)],
-                             columns=self.columns)
+                             columns=self.columns).T)
         obs_sources, obs_sinks = validate_gibbs_input(sources, sinks)
-        pd.util.testing.assert_frame_equal(obs_sources, sources)
-        pd.util.testing.assert_frame_equal(obs_sinks, sinks)
+        self.assertEqual(obs_sources, sources)
+        self.assertEqual(obs_sinks, sinks)
 
     def test_columns_non_identical(self):
         # Columns are not identical, error expected.
         data = np.random.randint(0, 10, size=20).reshape(5, 4)
-        sources = pd.DataFrame(data.astype(np.int32),
+        sources = dtot(pd.DataFrame(data.astype(np.int32),
                                index=self.index,
-                               columns=self.columns)
+                               columns=self.columns))
         data = np.random.randint(0, 10, size=200).reshape(50, 4)
-        sinks = pd.DataFrame(data.astype(np.int32),
+        sinks = dtot(pd.DataFrame(data.astype(np.int32),
                              index=['s%s' % i for i in range(50)],
-                             columns=['feature%s' % i for i in range(4)])
+                             columns=['feature%s' % i for i in range(4)]))
         self.assertRaises(ValueError, validate_gibbs_input, sources, sinks)
 
 
@@ -233,33 +188,33 @@ class TestIntersectAndSortSamples(TestCase):
         # feature and sample tables. Notice that order is different between
         # the samples that are shared between both tables. The order of samples
         # in the returned tables is set by the ordering done in np.intersect1d.
-        sdata_c1 = [3.1, 'red', 5]
-        sdata_c2 = [3.6, 'yellow', 7]
-        sdata_c3 = [3.9, 'yellow', -2]
-        sdata_c4 = [2.5, 'red', 5]
-        sdata_c5 = [6.7, 'blue', 10]
+        sdata_c1 = [3.1, 5]
+        sdata_c2 = [3.6, 7]
+        sdata_c3 = [3.9, -2]
+        sdata_c4 = [2.5, 5]
+        sdata_c5 = [6.7, 10]
         samples = ['s1', 's4', 's2', 's3', 'sX']
-        headers = ['pH', 'color', 'day']
+        headers = ['pH', 'day']
         stable = pd.DataFrame([sdata_c1, sdata_c4, sdata_c2, sdata_c3,
                                sdata_c5], index=samples, columns=headers)
 
         fdata = np.arange(90).reshape(9, 10)
         samples = ['s%i' % i for i in range(3, 12)]
         columns = ['o%i' % i for i in range(1, 11)]
-        ftable = pd.DataFrame(fdata, index=samples, columns=columns)
+        ftable = dtot(pd.DataFrame(fdata, index=samples, columns=columns).T)
 
-        exp_ftable = pd.DataFrame(fdata[[1, 0], :], index=['s4', 's3'],
-                                  columns=columns)
-        exp_stable = pd.DataFrame([sdata_c4, sdata_c3], index=['s4', 's3'],
+        exp_ftable = dtot(pd.DataFrame(fdata[[1, 0], :], index=['s4', 's3'],
+                                  columns=columns).T)
+        exp_ftable = exp_ftable.sort_order(['s3', 's4'])
+        exp_stable = pd.DataFrame([sdata_c3, sdata_c4], index=['s3', 's4'],
                                   columns=headers)
 
         obs_stable, obs_ftable = intersect_and_sort_samples(stable, ftable)
-
         pd.util.testing.assert_frame_equal(obs_stable, exp_stable)
-        pd.util.testing.assert_frame_equal(obs_ftable, exp_ftable)
+        self.assertEqual(obs_ftable, exp_ftable)
 
         # No shared samples, expect a ValueError.
-        ftable.index = ['ss%i' % i for i in range(9)]
+        ftable.update_ids({i: 'ss%s' % i for i in ftable.ids()}, inplace=True)
         self.assertRaises(ValueError, intersect_and_sort_samples, stable,
                           ftable)
 
@@ -267,14 +222,14 @@ class TestIntersectAndSortSamples(TestCase):
         fdata = np.arange(50).reshape(5, 10)
         samples = ['s1', 's4', 's2', 's3', 'sX']
         columns = ['o%i' % i for i in range(10)]
-        ftable = pd.DataFrame(fdata, index=samples, columns=columns)
+        ftable = dtot(pd.DataFrame(fdata, index=samples, columns=columns).T)
 
-        exp_ftable = ftable.loc[stable.index, :]
+        exp_ftable = ftable.copy()
         exp_stable = stable
 
         obs_stable, obs_ftable = intersect_and_sort_samples(stable, ftable)
         pd.util.testing.assert_frame_equal(obs_stable, exp_stable)
-        pd.util.testing.assert_frame_equal(obs_ftable, exp_ftable)
+        self.assertEqual(obs_ftable, exp_ftable)
 
 
 class TestGetSamples(TestCase):
@@ -321,39 +276,26 @@ class TestCollapseSourceData(TestCase):
                           [0,  25,  10,   5],
                           [0,  25,  10,   5],
                           [100,   0,  10,   5]])
-        ftable = pd.DataFrame(fdata, index=stable.index,
-                              columns=map(str, np.arange(4)))
-        source_samples = ['sample1', 'sample2', 'sample3']
-        method = 'sum'
-        obs = collapse_source_data(stable, ftable, source_samples, category,
-                                   method)
-        exp_data = np.vstack((fdata[1, :], fdata[0, :] + fdata[2, :]))
-        exp_index = [0.4, 3.0]
-        exp = pd.DataFrame(exp_data.astype(np.int32), index=exp_index,
-                           columns=map(str, np.arange(4)))
-        exp.index.name = 'collapse_col'
-        pd.util.testing.assert_frame_equal(obs, exp)
+        ftable = dtot(pd.DataFrame(fdata, index=stable.index,
+                              columns=list('0123')).T)
 
         # Example with collapse mode 'mean'. This will cause non-integer values
         # to be present, which the validate_gibbs_input should catch.
         source_samples = ['sample1', 'sample2', 'sample3', 'sample4']
-        method = 'mean'
-        obs = collapse_source_data(stable, ftable, source_samples, category,
-                                   method)
+        obs = collapse_source_data(stable, ftable, source_samples, category)
         exp_data = np.vstack((fdata[1, :],
                               fdata[[0, 2, 3], :].mean(0))).astype(np.int32)
         exp_index = [0.4, 3.0]
-        exp = pd.DataFrame(exp_data.astype(np.int32), index=exp_index,
-                           columns=map(str, np.arange(4)))
-        exp.index.name = 'collapse_col'
-        pd.util.testing.assert_frame_equal(obs, exp)
+        exp = dtot(pd.DataFrame(exp_data.astype(np.int32), index=exp_index,
+                           columns=map(str, np.arange(4))).T)
+        self.assertEqual(obs, exp)
 
     def test_example2(self):
         # Test on another arbitrary example.
         data = np.arange(200).reshape(20, 10)
         oids = ['o%s' % i for i in range(20)]
         sids = ['s%s' % i for i in range(10)]
-        ftable = pd.DataFrame(data.T, index=sids, columns=oids)
+        ftable = dtot(pd.DataFrame(data.T, index=sids, columns=oids).T)
         _stable = \
             {'s4': {'cat1': '2', 'cat2': 'x', 'cat3': 'A', 'cat4': 'D'},
              's0': {'cat1': '1', 'cat2': 'y', 'cat3': 'z', 'cat4': 'D'},
@@ -378,57 +320,8 @@ class TestCollapseSourceData(TestCase):
                               336,  366, 396, 426, 456, 486, 516, 546, 576]],
                             dtype=np.int32)
 
-        exp = pd.DataFrame(exp_data, index=exp_index, columns=oids)
-        exp.index.name = 'collapse_col'
-        pd.util.testing.assert_frame_equal(obs, exp)
-
-
-class TestSubsampleDataframe(TestCase):
-
-    def test_no_errors_expected(self):
-        # Testing this function deterministically is hard because cython is
-        # generating the PRNG calls. We'll settle for ensuring that the sums
-        # are correct.
-        fdata = np.array([[10,  50,  10,  70],
-                          [0,  25,  10,   5],
-                          [0,  25,  10,   5],
-                          [100,   0,  10,   5]])
-        ftable = pd.DataFrame(fdata, index=['s1', 's2', 's3', 's4'],
-                              columns=map(str, np.arange(4)))
-        n = 30
-        obs = subsample_dataframe(ftable, n)
-        self.assertTrue((obs.sum(axis=1) == n).all())
-
-    def test_subsample_with_replacement(self):
-        # Testing this function deterministically is hard because cython is
-        # generating the PRNG calls. We'll settle for ensuring that the sums
-        # are correct.
-        fdata = np.array([[10,  50,  10,  70],
-                          [0,  25,  10,   5],
-                          [0,  25,  10,   5],
-                          [100,   0,  10,   5]])
-        ftable = pd.DataFrame(fdata, index=['s1', 's2', 's3', 's4'],
-                              columns=map(str, np.arange(4)))
-        n = 30
-        obs = subsample_dataframe(ftable, n, replace=True)
-        self.assertTrue((obs.sum(axis=1) == n).all())
-
-    def test_shape_doesnt_change(self):
-        # Test that when features are removed by subsampling, the shape of the
-        # table does not change. Although rarifaction is stochastic, the
-        # probability that the below table does not lose at least one feature
-        # during rarefaction (and thus satisfy as the test of the condition we)
-        # are interested in) is nearly 0.
-        fdata = np.array([[0,   0,   0, 1e4],
-                          [0,   0,   1, 1e4],
-                          [0,   1,   0, 1e4],
-                          [1,   0,   0, 1e4]]).astype(int)
-        ftable = pd.DataFrame(fdata, index=['s1', 's2', 's3', 's4'],
-                              columns=map(str, np.arange(4)))
-        n = 10
-        obs = subsample_dataframe(ftable, n)
-        self.assertTrue((obs.sum(axis=1) == n).all())
-        self.assertEqual(obs.shape, ftable.shape)
+        exp = dtot(pd.DataFrame(exp_data, index=exp_index, columns=oids).T)
+        self.assertEqual(obs, exp)
 
 
 class TestDataAggregationFunctions(TestCase):
@@ -691,22 +584,23 @@ class TestDataAggregationFunctions(TestCase):
                         [3, 3, 4, 5, 5]])
 
         # Create expected proportion data.
-        prp_data = np.array([[0, 8/14., 2/14., 4/14.],
-                             [3/8., 0, 4/8., 1/8.],
-                             [5/10., 2/10., 0, 3/10.]], dtype=np.float64)
-        prp_std_data = np.zeros((3, 4), dtype=np.float64)
+        prp_data = np.array([[8/14., 2/14., 4/14.],
+                             [3/8., 4/8., 1/8.],
+                             [5/10., 2/10., 3/10.]], dtype=np.float64)
+        prp_std_data = np.zeros((3, 3), dtype=np.float64)
 
-        prp_std_data[0, 1:] = (ec1 / ec1.sum()).std(0)
-        prp_std_data[1, np.array([0, 2, 3])] = (ec2 / ec2.sum()).std(0)
-        prp_std_data[2, np.array([0, 1, 3])] = (ec3 / ec3.sum()).std(0)
+        prp_std_data[0] = (ec1 / ec1.sum()).std(0)
+        prp_std_data[1] = (ec2 / ec2.sum()).std(0)
+        prp_std_data[2] = (ec3 / ec3.sum()).std(0)
 
-        exp_sources = ['source%s' % i for i in range(3)] + ['Unknown']
+        exp_sources = ['source%s' % i for i in range(3)]
+        exp_envs = ['foo', 'bar', 'Unknown']
         feature_ids = ['f%s' % i for i in range(7)]
 
-        exp_prp = pd.DataFrame(prp_data, index=exp_sources[:-1],
-                               columns=exp_sources)
-        exp_prp_std = pd.DataFrame(prp_std_data, index=exp_sources[:-1],
-                                   columns=exp_sources)
+        exp_prp = pd.DataFrame(prp_data, index=exp_sources,
+                               columns=exp_envs)
+        exp_prp_std = pd.DataFrame(prp_std_data, index=exp_sources,
+                                   columns=exp_envs)
 
         # Create expected feature table data.
         ft1 = np.array([[0, 0, 0, 0, 0, 0, 0],
@@ -721,9 +615,12 @@ class TestDataAggregationFunctions(TestCase):
                         [0, 0, 0, 2, 0, 0, 0],
                         [0, 0, 0, 0, 0, 0, 0],
                         [0, 0, 0, 0, 0, 3, 0]], dtype=np.int64)
-        exp_fts = [pd.DataFrame(ft1, index=exp_sources, columns=feature_ids),
-                   pd.DataFrame(ft2, index=exp_sources, columns=feature_ids),
-                   pd.DataFrame(ft3, index=exp_sources, columns=feature_ids)]
+        exp_fts = [pd.DataFrame(ft1, index=exp_sources + ['Unknown'],
+                                columns=feature_ids),
+                   pd.DataFrame(ft2, index=exp_sources + ['Unknown'],
+                                columns=feature_ids),
+                   pd.DataFrame(ft3, index=exp_sources + ['Unknown'],
+                                columns=feature_ids)]
 
         # Prepare the inputs for passing to collate_gibbs_results
         all_envcounts = [ec1, ec2, ec3]
@@ -734,10 +631,11 @@ class TestDataAggregationFunctions(TestCase):
         obs_prp, obs_prp_std, obs_fts = \
             collate_gibbs_results(all_envcounts, all_env_assignments,
                                   all_taxon_assignments,
-                                  np.array(exp_sources[:-1]),
-                                  np.array(exp_sources[:-1]),
+                                  np.array(exp_sources),
+                                  np.array(exp_sources),
                                   np.array(feature_ids),
-                                  create_feature_tables=True, loo=True)
+                                  create_feature_tables=True, loo=True,
+                                  loo_ids=['foo', 'bar'])
 
         pd.util.testing.assert_frame_equal(obs_prp, exp_prp)
         pd.util.testing.assert_frame_equal(obs_prp_std, exp_prp_std)
@@ -748,10 +646,11 @@ class TestDataAggregationFunctions(TestCase):
         obs_prp, obs_prp_std, obs_fts = \
             collate_gibbs_results(all_envcounts, all_env_assignments,
                                   all_taxon_assignments,
-                                  np.array(exp_sources[:-1]),
-                                  np.array(exp_sources[:-1]),
+                                  np.array(exp_sources),
+                                  np.array(exp_sources),
                                   np.array(feature_ids),
-                                  create_feature_tables=False, loo=True)
+                                  create_feature_tables=False, loo=True,
+                                  loo_ids=['foo', 'bar'])
         self.assertTrue(obs_fts is None)
 
 
@@ -781,8 +680,8 @@ class ConditionalProbabilityTests(TestCase):
         self.alpha1 = .5
         self.alpha2 = .001
         self.beta = 10
-        self.source_data = np.array([[0, 0, 0, 100, 100, 100],
-                                     [100, 100, 100, 0, 0, 0]])
+        self.source_data = csr_matrix(np.array([[0, 0, 0, 100, 100, 100],
+                                                [100, 100, 100, 0, 0, 0]]))
         self.cp = ConditionalProbability(self.alpha1, self.alpha2, self.beta,
                                          self.source_data)
 
@@ -790,7 +689,7 @@ class ConditionalProbabilityTests(TestCase):
         exp_alpha1 = self.alpha1
         exp_alpha2 = self.alpha2
         exp_beta = self.beta
-        exp_m_xivs = self.source_data
+        exp_m_xivs = self.source_data.toarray()
         exp_m_vs = np.array([[300], [300]])
         exp_V = 3
         exp_tau = 6
@@ -799,7 +698,8 @@ class ConditionalProbabilityTests(TestCase):
         self.assertEqual(self.cp.alpha1, exp_alpha1)
         self.assertEqual(self.cp.alpha2, exp_alpha2)
         self.assertEqual(self.cp.beta, exp_beta)
-        np.testing.assert_array_equal(self.cp.m_xivs, exp_m_xivs)
+        np.testing.assert_array_equal(self.cp.m_xivs,
+                                      exp_m_xivs)
         np.testing.assert_array_equal(self.cp.m_vs, exp_m_vs)
         self.assertEqual(self.cp.V, exp_V)
         self.assertEqual(self.cp.tau, exp_tau)
@@ -814,10 +714,10 @@ class ConditionalProbabilityTests(TestCase):
         alpha1 = .01
         alpha2 = .3
         beta = 35
-        source_data = np.array([[10, 5,  2,  100],
-                                [0,  76, 7,  3],
-                                [9,  5,  0,  0],
-                                [0,  38, 11, 401]])
+        source_data = csr_matrix(np.array([[10, 5,  2,  100],
+                                           [0,  76, 7,  3],
+                                           [9,  5,  0,  0],
+                                           [0,  38, 11, 401]]))
         cp = ConditionalProbability(alpha1, alpha2, beta, source_data)
         n = 1300
         cp.set_n(n)
@@ -837,6 +737,7 @@ class ConditionalProbabilityTests(TestCase):
         self.assertEqual(cp.denominator_p_v, exp_denominator_p_v)
         self.assertEqual(cp.alpha2_n, exp_alpha2_n)
         self.assertEqual(cp.alpha2_n_tau, exp_alpha2_n_tau)
+
         np.testing.assert_array_almost_equal(cp.known_p_tv, exp_known_p_tv)
         np.testing.assert_array_almost_equal(cp.known_source_cp,
                                              exp_known_source_cp)
@@ -864,7 +765,6 @@ class ConditionalProbabilityTests(TestCase):
         for i in range(6):
             obs_jp_array[:, i] = self.cp.calculate_cp_slice(i, m_xiVs[i], m_V,
                                                             n_vnoti)
-
         np.testing.assert_array_almost_equal(obs_jp_array, exp_jp_array)
 
         # Test using Dan's R code and some print statements. Using the same
@@ -940,8 +840,8 @@ class TestGibbs(TestCase):
         alpha1 = .2
         alpha2 = .1
         beta = 3
-        source_data = np.array([[0, 1, 4, 10],
-                                [3, 2, 1, 1]])
+        source_data = csr_matrix(np.array([[0, 1, 4, 10],
+                                           [3, 2, 1, 1]]))
         sink = np.array([2, 1, 4, 2])
 
         # Make calculations using gibbs function.
@@ -1018,8 +918,8 @@ class TestGibbs(TestCase):
         features = ['o1', 'o2', 'o3', 'o4', 'o5', 'o6']
         source1 = np.array([10, 10, 10, 0, 0, 0])
         source2 = np.array([0, 0, 0, 10, 10, 10])
-        sources = pd.DataFrame(np.vstack((source1, source2)).astype(np.int32),
-                               index=['source1', 'source2'], columns=features)
+        sources = dtot(pd.DataFrame(np.vstack((source1, source2)).astype(np.int32),
+                               index=['source1', 'source2'], columns=features))
         self.assertRaises(ValueError, gibbs, sources, alpha1=-.3)
 
     def test_gibbs_data_bad(self):
@@ -1027,35 +927,26 @@ class TestGibbs(TestCase):
         features = ['o1', 'o2', 'o3', 'o4', 'o5', 'o6']
         source1 = np.array([10, 10, 10, 0, 0, np.nan])
         source2 = np.array([0, 0, 0, 10, 10, 10])
-        sources = pd.DataFrame(np.vstack((source1, source2)),
-                               index=['source1', 'source2'], columns=features)
+        sources = dtot(pd.DataFrame(np.vstack((source1, source2)),
+                               index=['source1', 'source2'], columns=features))
         self.assertRaises(ValueError, gibbs, sources)
 
         # features do not overlap.
         features = ['o1', 'o2', 'o3', 'o4', 'o5', 'o6']
         source1 = np.array([10, 10, 10, 0, 0, 0])
         source2 = np.array([0, 0, 0, 10, 10, 10])
-        sources = pd.DataFrame(np.vstack((source1, source2)),
-                               index=['source1', 'source2'], columns=features)
+        sources = dtot(pd.DataFrame(np.vstack((source1, source2)),
+                               index=['source1', 'source2'], columns=features))
         features2 = ['o1', 'asdsadO2', 'o3', 'o4', 'o5', 'o6']
         sink1 = np.array([10, 10, 10, 0, 0, 0])
         sink2 = np.array([0, 0, 0, 10, 10, 10])
-        sinks = pd.DataFrame(np.vstack((sink1, sink2)),
-                             index=['sink1', 'sink2'], columns=features2)
+        sinks = dtot(pd.DataFrame(np.vstack((sink1, sink2)),
+                             index=['sink1', 'sink2'], columns=features2))
         self.assertRaises(ValueError, gibbs, sources, sinks)
 
         # there are negative counts.
-        sources.iloc[0, 2] = -10
+        sources.matrix_data[0, 2] = -10
         self.assertRaises(ValueError, gibbs, sources)
-
-        # non-real data in input dataframe.
-        # copied from test of `validate_gibbs_input`.
-        data = np.random.randint(0, 10, size=20).reshape(5, 4)
-        sources = pd.DataFrame(data.astype(np.int32),
-                               index=['f%s' % i for i in range(5)],
-                               columns=['s%s' % i for i in range(4)])
-        sources.iloc[2, 2] = '3.a'
-        self.assertRaises(ValueError, validate_gibbs_input, sources)
 
     def test_consistency_when_gibbs_seeded(self):
         '''Test consistency of `gibbs` (without LOO) from run to run.
@@ -1077,10 +968,10 @@ class TestGibbs(TestCase):
         source1 = np.array([10, 10, 10, 0, 0, 0])
         source2 = np.array([0, 0, 0, 10, 10, 10])
         sink1 = .5*source1 + .5*source2
-        sinks = pd.DataFrame(sink1.reshape(1, 6).astype(np.int32),
-                             index=['sink1'], columns=features)
-        sources = pd.DataFrame(np.vstack((source1, source2)).astype(np.int32),
-                               index=['source1', 'source2'], columns=features)
+        sinks = dtot(pd.DataFrame(sink1.reshape(1, 6).astype(np.int32),
+                             index=['sink1'], columns=features).T)
+        sources = dtot(pd.DataFrame(np.vstack((source1, source2)).astype(np.int32),
+                               index=['source1', 'source2'], columns=features).T)
 
         np.random.seed(1042)
         mpm, mps, fts = gibbs(sources, sinks, alpha1=.001, alpha2=.01, beta=1,
@@ -1128,56 +1019,37 @@ class TestGibbs(TestCase):
                           source2b)).astype(np.int32)
         source_names = ['source1a', 'source1b', 'source2a', 'source2b']
         feature_names = ['o1', 'o2', 'o3', 'o4', 'o5', 'o6']
-        sources = pd.DataFrame(vals, index=source_names, columns=feature_names)
+        sources = dtot(pd.DataFrame(vals, index=source_names,
+                                    columns=feature_names).T)
+
+        md = pd.DataFrame(['foo', 'bar', 'foo', 'bar'],
+                          index=source_names, columns=['Env'])
 
         np.random.seed(1042)
         obs_mpm, obs_mps, obs_fts = gibbs(sources, sinks=None, alpha1=.001,
                                           alpha2=.01, beta=1, restarts=3,
                                           draws_per_restart=5, burnin=50,
-                                          delay=4, create_feature_tables=True)
+                                          delay=4, create_feature_tables=True,
+                                          sample_metadata=md,
+                                          source_category_column='Env')
 
-        vals = np.array([[0., 0.62444444, 0., 0.01555556, 0.36],
-                         [0.68444444, 0., 0.09333333, 0.12666667, 0.09555556],
-                         [0., 0.00888889, 0., 0.08222222, 0.90888889],
-                         [0.19111111, 0.2, 0.5, 0., 0.10888889]])
+        vals = np.array([[0.051111, 0.000000, 0.948889],
+                         [0.206667, 0.375556, 0.417778],
+                         [0.031111, 0.000000, 0.968889],
+                         [0.204444, 0.604444, 0.191111]])
         exp_mpm = pd.DataFrame(vals, index=source_names,
-                               columns=source_names + ['Unknown'])
+                               columns=['bar', 'foo', 'Unknown'])
 
-        vals = np.array([[0., 0.02406393, 0., 0.0015956, 0.02445387],
-                         [0.0076923, 0., 0.00399176, 0.00824322, 0.00648476],
-                         [0., 0.00127442, 0., 0.00622575, 0.00609752],
-                         [0.00636175, 0.00786721, 0.00525874, 0., 0.00609752]])
+        vals = np.array([[0.004046, 0.000000, 0.004046],
+                         [0.011848, 0.014019, 0.013550],
+                         [0.003931, 0.000000, 0.003931],
+                         [0.010131, 0.011210, 0.008174]])
         exp_mps = pd.DataFrame(vals, index=source_names,
-                               columns=source_names + ['Unknown'])
-
-        fts0_vals = np.array([[0, 0, 0, 0, 0, 0],
-                              [93, 87, 101, 0, 0, 0],
-                              [0, 0, 0, 0, 0, 0],
-                              [3, 4, 0, 0, 0, 0],
-                              [54, 59, 49, 0, 0, 0]])
-        fts1_vals = np.array([[113, 98, 97, 0, 0, 0],
-                              [0, 0, 0, 0, 0, 0],
-                              [0, 0, 0, 15, 13, 14],
-                              [5, 7, 11, 11, 12, 11],
-                              [2, 15, 12, 4, 5, 5]])
-        fts2_vals = np.array([[0, 0, 0, 0, 0, 0],
-                              [0, 0, 0, 2, 1, 1],
-                              [0, 0, 0, 0, 0, 0],
-                              [0, 0, 0, 12, 12, 13],
-                              [0, 0, 0, 136, 137, 136]])
-        fts3_vals = np.array([[28, 27, 31, 0, 0, 0],
-                              [27, 24, 25, 3, 4, 7],
-                              [0, 0, 0, 80, 71, 74],
-                              [0, 0, 0, 0, 0, 0],
-                              [5, 9, 4, 7, 15, 9]])
-        fts_vals = [fts0_vals, fts1_vals, fts2_vals, fts3_vals]
-        exp_fts = [pd.DataFrame(vals, index=source_names + ['Unknown'],
-                   columns=feature_names) for vals in fts_vals]
+                               columns=['bar', 'foo', 'Unknown'])
 
         pd.util.testing.assert_frame_equal(obs_mpm, exp_mpm)
-        pd.util.testing.assert_frame_equal(obs_mps, exp_mps)
-        for obs_fts, exp_fts in zip(obs_fts, exp_fts):
-            pd.util.testing.assert_frame_equal(obs_fts, exp_fts)
+        pd.util.testing.assert_frame_equal(obs_mps, exp_mps,
+                                           check_less_precise=True)
 
     def test_gibbs_close_to_sourcetracker_1(self):
         '''This test is stochastic; occasional errors might occur.
@@ -1198,8 +1070,8 @@ class TestGibbs(TestCase):
                      dtype=np.int32)
         sources_names = ['source1', 'source2', 'source3']
         feature_names = ['f%i' % i for i in range(32)]
-        sources = pd.DataFrame(sources_data, index=sources_names,
-                               columns=feature_names)
+        sources = dtot(pd.DataFrame(sources_data, index=sources_names,
+                               columns=feature_names).T)
 
         sinks_data = np.array([[0, 0, 0, 0, 0, 0, 170, 0, 0, 0, 0, 0, 0, 0, 0,
                                 0, 0, 0, 385, 0, 0, 0, 0, 0, 0, 0, 350, 0, 0,
@@ -1214,8 +1086,8 @@ class TestGibbs(TestCase):
                                 0, 0, 0, 386, 0, 0, 0, 0, 0, 0, 0, 350, 0, 0,
                                 0, 0, 94]], dtype=np.int32)
         sinks_names = ['sink1', 'sink2', 'sink3', 'sink4']
-        sinks = pd.DataFrame(sinks_data, index=sinks_names,
-                             columns=feature_names)
+        sinks = dtot(pd.DataFrame(sinks_data, index=sinks_names,
+                             columns=feature_names).T)
 
         obs_mpm, obs_mps, _ = gibbs(sources, sinks, alpha1=.001, alpha2=.1,
                                     beta=10, restarts=2, draws_per_restart=2,

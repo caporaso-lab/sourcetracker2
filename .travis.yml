@@ -26,6 +26,6 @@ install:
 script:
   - source activate test-env
   - flake8 sourcetracker setup.py
-  - nosetests -v sourcetracker sourcetracker/* --with-coverage --cover-package=sourcetracker
+  - nosetests -v sourcetracker sourcetracker/*/tests/*.py --with-coverage --cover-package=sourcetracker
 after_success:
   - coveralls

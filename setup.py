@@ -104,7 +104,7 @@ setup(
           'h5py',
           'seaborn'],
     classifiers=classifiers,
-    package_data={'sourcetracker/_q2': ['citations.bib']},
+    package_data={'sourcetracker': ['citations.bib']},
     entry_points={'qiime2.plugins': q2cmds,
                   'console_scripts': standalone},
     cmdclass={'install': CustomInstallCommand,

@@ -18,25 +18,23 @@ from skbio.stats import subsample_counts
 
 
 def validate_gibbs_input(sources, sinks=None):
-    '''Validate `gibbs` inputs and coerce/round to type `np.int32`.
+    '''Validate `gibbs` inputs.
 
     Summary
     -------
-    Checks if data contains `nan` or `null` values, and returns data as
-    type `np.int32`. If both `sources` and `sinks` are passed, columns must
-    match exactly (including order).
+    Checks if data contains `nan` or `null` values. If both `sources` and
+    `sinks` are passed, columns must match exactly (including order).
 
     Parameters
     ----------
-    sources : pd.DataFrame
-        A dataframe containing count data. Must be castable to `np.int32`.
-    sinks : optional, pd.DataFrame or None
-        If not `None` a dataframe containing count data that is castable to
-        `np.int32`.
+    sources : biom.Table
+        A Table containing count data.
+    sinks : optional, biom.Table or None
+        If not `None` a Table containing count data
 
     Returns
     -------
-    pd.Dataframe(s)
+    biom.Table
 
     Raises
     ------
@@ -50,35 +48,32 @@ def validate_gibbs_input(sources, sinks=None):
         If `sources` and `sinks` passed and columns are not identical.
     '''
     if sinks is not None:
-        dfs = [sources, sinks]
+        tabs = [sources, sinks]
     else:
-        dfs = [sources]
+        tabs = [sources]
 
-    for df in dfs:
-        # Because of this bug (https://github.com/numpy/numpy/issues/6114)
-        # we can't use e.g. np.isreal(df.dtypes).all(). Instead we use
-        # applymap. Based on:
-        # http://stackoverflow.com/questions/21771133/finding-non-numeric-rows-in-dataframe-in-pandas
-        if not df.applymap(np.isreal).values.all():
-            raise ValueError('A dataframe contains one or more values which '
-                             'are not numeric. Data must be exclusively '
-                             'positive integers.')
-        if np.isnan(df.values).any():
-            raise ValueError('A dataframe has `nan` or `null` values. Data '
-                             'must be exclusively positive integers.')
-        if (df.values < 0).any():
+    for tab in tabs:
+        if (tab.matrix_data.data < 0).any():
             raise ValueError('A dataframe has a negative count. Data '
                              'must be exclusively positive integers.')
+        if np.isnan(tab.matrix_data.data).any():
+            raise ValueError("A table must not have nan values")
 
     if sinks is not None:
-        if not (sinks.columns == sources.columns).all():
+        if len(sinks.ids(axis='observation')) != len(sources.ids(axis='observation')):  # noqa
             raise ValueError('Dataframes do not contain identical (and '
                              'identically ordered) columns. Columns must '
                              'match exactly.')
-        return (sources.astype(np.int32, copy=False),
-                sinks.astype(np.int32, copy=False))
+        elif (sinks.ids(axis='observation') != sources.ids(axis='observation')).any():  # noqa
+            raise ValueError('Dataframes do not contain identical (and '
+                             'identically ordered) columns. Columns must '
+                             'match exactly.')
+
+        # n.b. not casting to int32 as we cast to float64 later, and separately
+        # to int32, so deferring the casting
+        return sources, sinks
     else:
-        return sources.astype(np.int32, copy=False)
+        return sources
 
 
 def validate_gibbs_parameters(alpha1, alpha2, beta, restarts,
@@ -107,7 +102,7 @@ def intersect_and_sort_samples(sample_metadata, feature_table):
     ----------
     sample_metadata : pd.DataFrame
         Contingency table with rows, columns = samples, metadata.
-    feature_table : pd.DataFrame
+    feature_table : biom.Table
         Contingency table with rows, columns = samples, features.
 
     Returns
@@ -120,21 +115,22 @@ def intersect_and_sort_samples(sample_metadata, feature_table):
     ValueError
         If no shared samples are found.
     '''
-    shared_samples = np.intersect1d(sample_metadata.index, feature_table.index)
+    shared_samples = np.array(sorted(set(sample_metadata.index) &
+                                     set(feature_table.ids())))
     if shared_samples.size == 0:
         raise ValueError('There are no shared samples between the feature '
                          'table and the sample metadata. Ensure that you have '
                          'passed the correct files.')
-    elif (shared_samples.size == sample_metadata.shape[0] ==
-          feature_table.shape[0]):
+
+    elif (shared_samples.size == sample_metadata.shape[0] == feature_table.shape[1]):
         s_metadata = sample_metadata.copy()
-        s_features = feature_table.copy()
+        s_features = feature_table.sort_order(list(s_metadata.index))
     else:
-        s_metadata = sample_metadata.loc[np.in1d(sample_metadata.index,
-                                                 shared_samples), :].copy()
-        s_features = feature_table.loc[np.in1d(feature_table.index,
-                                               shared_samples), :].copy()
-    return s_metadata, s_features.loc[s_metadata.index, :]
+        s_metadata = sample_metadata.loc[shared_samples].copy()
+        s_features = feature_table.filter(set(shared_samples),
+                                          inplace=False)
+        s_features = s_features.sort_order(shared_samples)
+    return s_metadata, s_features
 
 
 def get_samples(sample_metadata, col, value):
@@ -143,22 +139,21 @@ def get_samples(sample_metadata, col, value):
 
 
 def collapse_source_data(sample_metadata, feature_table, source_samples,
-                         category, method):
+                         category, method='mean'):
     '''Collapse each set of source samples into an aggregate source.
 
     Parameters
     ----------
     sample_metadata : pd.DataFrame
         Contingency table where rows are features and columns are metadata.
-    feature_table : pd.DataFrame
+    feature_table : biom.Table
         Contingency table where rows are features and columns are samples.
     source_samples : iterable
         Samples which should be considered for collapsing (i.e. are sources).
     category : str
         Column in `sample_metadata` which should be used to group samples.
-    method : str
-        One of the available aggregation methods in pd.DataFrame.agg (mean,
-        median, prod, sum, std, var).
+    methon : str
+        Either 'mean' or 'sum'
 
     Returns
     -------
@@ -210,33 +205,21 @@ def collapse_source_data(sample_metadata, feature_table, source_samples,
     3.0           10  75  20  75
     '''
     sources = sample_metadata.loc[source_samples, :]
-    table = feature_table.loc[sources.index, :].copy()
-    table['collapse_col'] = sources[category]
-    return validate_gibbs_input(table.groupby('collapse_col').agg(method))
+    overlap = set(sources.index) & set(feature_table.ids())
+    table = feature_table.filter(overlap,
+                                 inplace=False)
+    collapse_mapping = sources[category].to_dict()
+    def collapse_f(i, m):
+        return collapse_mapping[i]
 
-
-def subsample_dataframe(df, depth, replace=False):
-    '''Subsample (rarify) input dataframe without replacement.
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-        Feature table where rows are features and columns are samples.
-    depth : int
-        Number of sequences to choose per sample.
-    replace : bool, optional
-        If ``True``, subsample with replacement. If ``False`` (the default),
-        subsample without replacement.
-
-    Returns
-    -------
-    pd.DataFrame
-        Subsampled dataframe.
-    '''
-    def subsample(x):
-        return pd.Series(subsample_counts(x.values, n=depth, replace=replace),
-                         index=x.index)
-    return df.apply(subsample, axis=1)
+    if method == 'sum':
+        table = table.collapse(collapse_f, norm=False)
+    else:
+        table = table.collapse(collapse_f, norm=True)
+    table = table.sort_order(sorted(table.ids()))
+    table.del_metadata()
+    table.matrix_data.data = np.floor(table.matrix_data.data)
+    return validate_gibbs_input(table)
 
 
 def generate_environment_assignments(n, num_sources):
@@ -370,9 +353,8 @@ class ConditionalProbability(object):
         self.alpha1 = alpha1
         self.alpha2 = alpha2
         self.beta = beta
-        self.m_xivs = source_data.astype(np.float64)
-        self.m_vs = np.expand_dims(source_data.sum(1),
-                                   axis=1).astype(np.float64)
+        self.m_xivs = np.array(source_data.toarray())
+        self.m_vs = source_data.sum(1).astype(np.float64)
         self.V = source_data.shape[0] + 1
         self.tau = source_data.shape[1]
         # Create the joint probability vector which will be overwritten each
@@ -390,14 +372,8 @@ class ConditionalProbability(object):
                           (self.m_vs + self.tau * self.alpha1)
         self.denominator_p_v = self.n - 1 + (self.beta * self.V)
 
-        # We are going to be accessing columns of this array in the innermost
-        # loop of the Gibbs sampler. By forcing this array into 'F' order -
-        # 'Fortran-contiguous' - we've set it so that accessing column slices
-        # is faster. Tests indicate about 2X speed up in this operation from
-        # 'F' order as opposed to the default 'C' order.
         self.known_source_cp = np.array(self.known_p_tv / self.denominator_p_v,
-                                        order='F', dtype=np.float64)
-
+                                        dtype=np.float64, order='F')
         self.alpha2_n = self.alpha2 * self.n
         self.alpha2_n_tau = self.alpha2_n * self.tau
 
@@ -440,7 +416,7 @@ def gibbs_sampler(sink, cp, restarts, draws_per_restart, burnin, delay):
 
     Parameters
     ----------
-    sink : np.array
+    sink : scipy.sparse.csr (or csc) vector
         A one dimentional array containing counts of features whose sources are
         to be estimated.
     cp : ConditionalProbability object
@@ -510,6 +486,8 @@ def gibbs_sampler(sink, cp, restarts, draws_per_restart, burnin, delay):
     # reassigned based on the increasinly accurate distribution. sink[i] i's
     # will be placed in the `taxon_sequence` vector to allow each individual
     # count to be removed and reassigned.
+
+    # indices and data are int32 already from cast
     taxon_sequence = np.repeat(np.arange(num_features), sink).astype(np.int32)
 
     # Update the conditional probability class now that we have the sink sum.
@@ -607,7 +585,8 @@ def _gibbs_loo(cp_and_sink, restarts, draws_per_restart, burnin, delay):
 
 def gibbs(sources, sinks=None, alpha1=.001, alpha2=.1, beta=10, restarts=10,
           draws_per_restart=1, burnin=100, delay=1, jobs=1,
-          create_feature_tables=True):
+          create_feature_tables=True, sample_metadata=None,
+          source_category_column=None):
     '''Gibb's sampling API.
 
     Notes
@@ -634,13 +613,11 @@ def gibbs(sources, sinks=None, alpha1=.001, alpha2=.1, beta=10, restarts=10,
 
     Parameters
     ----------
-    sources : DataFrame
-        A dataframe containing source data (rows are sources, columns are
-        features). The index must be the names of the sources.
-    sinks : DataFrame or None
-        A dataframe containing sink data (rows are sinks, columns are
-        features). The index must be the names of the sinks. If `None`,
-        leave-one-out (LOO) prediction will be done.
+    sources : biom.Table
+        A Table containing source data
+    sinks : biom.Table or None
+        A Table containing sink data. If `None`, leave-one-out (LOO) prediction
+        will be done.
     alpha1 : float
         Prior counts of each feature in the training environments. Higher
         values decrease the trust in the training environments, and make
@@ -773,11 +750,22 @@ def gibbs(sources, sinks=None, alpha1=.001, alpha2=.1, beta=10, restarts=10,
     # Run LOO predictions on `sources`.
     if sinks is None:
         cps_and_sinks = []
-        for source in sources.index:
+        loo_ids = sorted(sample_metadata[source_category_column].unique())
+        for source in sources.ids():
             # fix the deprecated pandas code
-            _sources = sources.loc[sources.index.map(lambda x: x != source)]
-            cp = ConditionalProbability(alpha1, alpha2, beta, _sources.values)
-            sink = sources.loc[source, :].values
+            without = set(sources.ids()) - {source, }
+            _sources = sources.filter(without, inplace=False)
+
+            if sample_metadata is None:
+                csources = _sources
+            else:
+                csources = collapse_source_data(sample_metadata, _sources,
+                                                list(without),
+                                                source_category_column,
+                                                'mean')
+            cp = ConditionalProbability(alpha1, alpha2, beta,
+                                        csources.matrix_data.T)
+            sink = sources.filter({source, }, inplace=False).matrix_data.T.toarray()[0]
             cps_and_sinks.append((cp, sink))
 
         f = partial(_gibbs_loo, **kwargs)
@@ -788,9 +776,11 @@ def gibbs(sources, sinks=None, alpha1=.001, alpha2=.1, beta=10, restarts=10,
 
     # Run normal prediction on `sinks`.
     else:
-        cp = ConditionalProbability(alpha1, alpha2, beta, sources.values)
+        loo_ids = None
+        cp = ConditionalProbability(alpha1, alpha2, beta,
+                                    sources.matrix_data.T)
         f = partial(gibbs_sampler, cp=cp, **kwargs)
-        args = sinks.values
+        args = sinks.matrix_data.T.toarray()
         loo = False
 
     with Pool(jobs) as p:
@@ -799,9 +789,10 @@ def gibbs(sources, sinks=None, alpha1=.001, alpha2=.1, beta=10, restarts=10,
     return collate_gibbs_results([i[0] for i in results],
                                  [i[1] for i in results],
                                  [i[2] for i in results],
-                                 sinks.index, sources.index,
-                                 sources.columns,
-                                 create_feature_tables, loo=loo)
+                                 sinks.ids(), sources.ids(),
+                                 sources.ids(axis='observation'),
+                                 create_feature_tables, loo=loo,
+                                 loo_ids=loo_ids)
 
 
 def cumulative_proportions(all_envcounts, sink_ids, source_ids):
@@ -901,7 +892,8 @@ def single_sink_feature_table(final_env_assignments, final_taxon_assignments,
 
 def collate_gibbs_results(all_envcounts, all_env_assignments,
                           all_taxon_assignments, sink_ids, source_ids,
-                          feature_ids, create_feature_tables, loo):
+                          feature_ids, create_feature_tables, loo,
+                          loo_ids=None):
     '''Collate `gibbs_sampler` output, optionally including feature tables.
 
     Parameters
@@ -951,34 +943,7 @@ def collate_gibbs_results(all_envcounts, all_env_assignments,
     '''
     if loo:
         props, props_stds = cumulative_proportions(all_envcounts, source_ids,
-                                                   source_ids[:-1])
-        # The source_ids for each environment are different. Specifically, the
-        # ith row of `props` and `props_stds` must have a 0 value inserted at
-        # the ith position to reflect the fact that the ith source was held out
-        # (it was the sink during that iteration). To do this we can imagine
-        # breaking the nXn array returned by `cumulative_proportions`, and
-        # inserting it into an nXn+1 array, with the missing cells on the
-        # diagonal of the nXn+1 array.
-        nrows = len(source_ids)
-        ncols = nrows + 1
-        new_source_ids = list(source_ids)+['Unknown']
-        new_data = np.zeros((nrows, ncols), dtype=np.float64)
-        new_data_std = np.zeros((nrows, ncols), dtype=np.float64)
-
-        new_data[np.triu_indices(ncols, 1)] = \
-            props.values[np.triu_indices(ncols - 1, 0)]
-        new_data[np.tril_indices(ncols - 1, -1, ncols)] = \
-            props.values[np.tril_indices(ncols - 1, -1)]
-
-        new_data_std[np.triu_indices(ncols, 1)] = \
-            props_stds.values[np.triu_indices(ncols - 1, 0)]
-        new_data_std[np.tril_indices(ncols - 1, -1, ncols)] = \
-            props_stds.values[np.tril_indices(ncols - 1, -1)]
-
-        props = pd.DataFrame(new_data, index=source_ids,
-                             columns=new_source_ids)
-        props_stds = pd.DataFrame(new_data_std, index=source_ids,
-                                  columns=new_source_ids)
+                                                   loo_ids)
 
         if create_feature_tables:
             fts = []

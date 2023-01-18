@@ -48,7 +48,7 @@ PARAMETERS = {'sample_metadata': Metadata,
               'draws_per_restart': Int,
               'burnin': Int,
               'delay': Int,
-              'per_sink_feature_assignments': Bool % Choices(True),
+              'per_sink_feature_assignments': Bool,
               'sample_with_replacement': Bool,
               'source_sink_column': Str,
               'source_column_value': Str,
@@ -76,7 +76,7 @@ PARAMETERDESC = {'sample_metadata': DESC_MAP,
                  'source_category_column': DESC_CAT}
 
 citations = qiime2.plugin.Citations.load(
-    '_q2/citations.bib', package='sourcetracker')
+    'citations.bib', package='sourcetracker')
 
 plugin = qiime2.plugin.Plugin(
     name='sourcetracker2',
@@ -92,15 +92,11 @@ plugin.methods.register_function(
     inputs={'feature_table': FeatureTable[Frequency]},
     parameters=PARAMETERS,
     outputs=[('mixing_proportions', FeatureTable[RelativeFrequency]),
-             ('mixing_proportion_stds', FeatureTable[RelativeFrequency]),
-             ('per_sink_assignments', FeatureTable[RelativeFrequency]),
-             ('per_sink_assignments_map', SampleData[SinkSourceMap])],
+             ('mixing_proportion_stds', FeatureTable[RelativeFrequency])],
     input_descriptions={'feature_table': DESC_TBL},
     parameter_descriptions=PARAMETERDESC,
     output_descriptions={'mixing_proportions': OUT_MEAN,
-                         'mixing_proportion_stds': OUT_STD,
-                         'per_sink_assignments': OUT_PFA,
-                         'per_sink_assignments_map': OUT_PFAM},
+                         'mixing_proportion_stds': OUT_STD},
     name='sourcetracker2 gibbs',
     description=('SourceTracker2 is a highly parallel version of '
                  'SourceTracker that was originally described in'

@@ -17,7 +17,7 @@ from biom import Table, load_table
 from sourcetracker._cli import cli
 from sourcetracker._gibbs import gibbs_helper
 from sourcetracker._plot import plot_heatmap
-from sourcetracker._util import parse_sample_metadata, biom_to_df
+from sourcetracker._util import parse_sample_metadata
 
 # import default descriptions
 from sourcetracker._gibbs_defaults import (DESC_TBL, DESC_MAP, DESC_OUT,
@@ -145,7 +145,7 @@ def gibbs(table_fp: Table,
 
     # Load the metadata file and feature table.
     sample_metadata = parse_sample_metadata(open(mapping_fp, 'U'))
-    feature_table = biom_to_df(load_table(table_fp))
+    feature_table = load_table(table_fp)
 
     # run the gibbs sampler helper function (same used for q2)
     results = gibbs_helper(feature_table, sample_metadata, loo, jobs,
