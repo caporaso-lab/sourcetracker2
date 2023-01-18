@@ -39,13 +39,13 @@ def gibbs(feature_table: Table,
           draws_per_restart: int = DEFAULT_ONE,
           burnin: int = DEFAULT_HUND,
           delay: int = DEFAULT_ONE,
-          per_sink_feature_assignments: bool = DEFAULT_TRU,
+          per_sink_feature_assignments: bool = DEFAULT_FLS,
           sample_with_replacement: bool = DEFAULT_FLS,
           source_sink_column: str = DEFAULT_SNK,
           source_column_value: str = DEFAULT_SRS,
           sink_column_value: str = DEFAULT_SRS2,
           source_category_column: str = DEFAULT_CAT)\
-              -> (pd.DataFrame, pd.DataFrame, Table, pd.DataFrame):
+              -> (pd.DataFrame, pd.DataFrame):
     # convert tables
     sample_metadata = sample_metadata.to_dataframe()
     # run the gibbs sampler helper function (same used for q2)
@@ -58,36 +58,15 @@ def gibbs(feature_table: Table,
                            source_category_column)
     # get the results (with fas)
     # here we only return the three df (via q2)
-    mpm, mps, fas = results
+    mpm, mps = results
     # make list filter
 
-    def filter_list(inds, factor): return [ind for ind in list(inds)
-                                           if ind not in factor]
-    # concat each sink-source (dropping sources with same name as sink)
-    fas_merged = pd.concat({sink: source.reindex(filter_list(source.index,
-                                                             sink))
-                            for sink, source in zip(mpm.columns, fas)})
-    # if loo is True then columns are source-source
-    if loo:
-        columns_ = ['Source_one', 'Source_two']
-    # if loo is False then columns as sink-source
-    else:
-        columns_ = ['Sink', 'Source']
-    # make the index map and mapping in the same step
-    ss_map = {'sample%i' % i: list(map(str, v))
-              for i, v in enumerate(fas_merged.index.tolist())}
-    ss_map = pd.DataFrame(ss_map, columns_).T
-    ss_map.index.name = 'sampleid'
     # output for QIIME2
-    fas_merged.index = ss_map.index
-    fas_merged = Table(fas_merged.T.values,
-                       fas_merged.T.index,
-                       fas_merged.T.columns)
     # this is because QIIME will only
     # support these for now
     # in the future we will work
     # on supporting collections (i.e. fas)
-    return mpm, mps, fas_merged, ss_map
+    return mpm, mps
 
 
 def subsample(table, depth, replacement):
