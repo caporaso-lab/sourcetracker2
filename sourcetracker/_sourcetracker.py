@@ -838,6 +838,12 @@ def cumulative_proportions(all_envcounts, sink_ids, source_ids):
     are met. It is the user's responsibility to check these if using this
     function independently.
     '''
+
+    ##Write out files to be read by stats function
+    np.save('envcounts',all_envcounts)
+    np.save('sink_ids',sink_ids)
+    np.save('source_ids',source_ids)
+    
     num_sinks = len(sink_ids)
     num_sources = len(source_ids) + 1
 
@@ -851,7 +857,6 @@ def cumulative_proportions(all_envcounts, sink_ids, source_ids):
     cols = list(source_ids) + ['Unknown']
     return (pd.DataFrame(proportions, index=sink_ids, columns=cols),
             pd.DataFrame(proportions_std, index=sink_ids, columns=cols))
-
 
 def single_sink_feature_table(final_env_assignments, final_taxon_assignments,
                               source_ids, feature_ids):
