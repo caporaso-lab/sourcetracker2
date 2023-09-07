@@ -188,7 +188,7 @@ def gibbs(table_fp: Table,
         os.mkdir(output_dir+'diagnostics')
         data = np.load('envcounts.npy', allow_pickle=True)
         sink_ids = np.load('sink_ids.npy', allow_pickle=True)
-        source_ids = np.load('source_ids.npy',allow_pickle=True)
+        source_ids = np.load('source_ids.npy', allow_pickle=True)
         file_path = output_dir+'diagnostics'
         
         source_ids = np.append(source_ids, ['unknown'])
