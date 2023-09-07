@@ -841,7 +841,7 @@ def cumulative_proportions(all_envcounts, sink_ids, source_ids):
 
     ##Write out files to be read by stats function
     np.save('envcounts', all_envcounts)
-    np.save('sink_ids',sink_ids)
+    np.save('sink_ids', sink_ids)
     np.save('source_ids', source_ids)
     
     num_sinks = len(sink_ids)
