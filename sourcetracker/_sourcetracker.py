@@ -742,7 +742,7 @@ def gibbs(sources, sinks=None, alpha1=.001, alpha2=.1, beta=10, restarts=10,
 
     # LOO prediction.
     >>> mpm, mps, fas = gibbs(source_df, sink_df, alpha1=alpha1, alpha2=alpha2,
-    ...        beta=beta,restarts=restarts, draws_per_restart=draws_per_restart,
+    ...       beta=beta,restarts=restarts, draws_per_restart=draws_per_restart,
     ...        burnin=burnin, delay=delay,jobs=1, create_feature_tables=True)
     '''
     if not validate_gibbs_parameters(alpha1, alpha2, beta, restarts,
