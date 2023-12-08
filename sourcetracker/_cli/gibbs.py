@@ -123,7 +123,6 @@ from sourcetracker._gibbs_defaults import (DEFAULT_ALPH1, DEFAULT_ALPH2,
               show_default=True)
 @click.option('--limit', required=False, default=0.05, type=click.FLOAT,
               show_default=True)
-
 def gibbs(table_fp: Table,
           mapping_fp: pd.DataFrame,
           output_dir: str,
@@ -186,7 +185,8 @@ def gibbs(table_fp: Table,
     fig, ax = plot_heatmap(mpm.T)
     fig.savefig(os.path.join(output_dir, 'mixing_proportions.pdf'), dpi=300)
 
-    # Diagnostics code, should work, if not this code was prewritten so this will be a bit of a mess
+    # Diagnostics code, should work, if not this code was prewritten 
+    #so this will be a bit of a mess
     if diagnostics:
         os.mkdir(output_dir + 'diagnostics')
         data = np.load('envcounts.npy', allow_pickle=True)
@@ -207,8 +207,8 @@ def gibbs(table_fp: Table,
                 source_index += 1
                 source_array = array[:, source_index]
                 split_array = np.array_split(source_array, draws_per_restart)
-                plt.figure(figsize=(8, 6), dpi=300), plt.title(sink_id, fontsize=(16))
-
+                plt.figure(figsize=(8, 6), dpi=300), \
+                plt.title(sink_id, fontsize=(16))
                 flagged = []
                 for splits in split_array:
                     data_sum = np.cumsum(splits)
@@ -220,7 +220,8 @@ def gibbs(table_fp: Table,
                     line_average = np.average(scalar)
                     line_average = np.round(line_average, decimals=4)
                     flagged.append(line_average)
-                    plt.plot(scalar, label=line_average), plt.legend(), plt.ylabel(sources, fontsize=(16))
+                    plt.plot(scalar, label=line_average), plt.legend(), \
+                    plt.ylabel(sources, fontsize=(16))
 
                 absolutes = [abs(chains) for chains in flagged]
                 difference = (max(absolutes) - min(absolutes))
