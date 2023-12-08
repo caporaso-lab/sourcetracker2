@@ -707,7 +707,9 @@ def gibbs(sources, sinks=None, alpha1=.001, alpha2=.1, beta=10, restarts=10,
     >>> source1 = np.random.randint(0, 1000, size=50)
     >>> source2 = np.random.randint(0, 1000, size=50)
     >>> source3 = np.random.randint(0, 1000, size=50)
-    >>> source_df = pd.DataFrame([source1, source2, source3],index=['source1', 'source2', 'source3'],columns=otus, dtype=np.int32)
+    >>> source_df = pd.DataFrame([source1, source2, source3],
+    ...    index=['source1', 'source2', 'source3'],
+    ...    columns=otus, dtype=np.int32)
 
     # Prepare some sink data.
     >>> sink1 = np.ceil(.5*source1+.5*source2)
@@ -716,7 +718,9 @@ def gibbs(sources, sinks=None, alpha1=.001, alpha2=.1, beta=10, restarts=10,
     >>> sink4 = source1
     >>> sink5 = source2
     >>> sink6 = np.random.randint(0, 1000, size=50)
-    >>> sink_df = pd.DataFrame([sink1, sink2, sink3, sink4, sink5, sink6], index=np.array(['sink%s' % i for i in range(1,7)]),columns=otus, dtype=np.int32)
+    >>> sink_df = pd.DataFrame([sink1, sink2, sink3, sink4, sink5, sink6],
+    ...    index=np.array(['sink%s' % i for i in range(1,7)]),
+    ...    columns=otus, dtype=np.int32)
 
     # Set paramaters
     >>> alpha1 = .01
@@ -727,13 +731,14 @@ def gibbs(sources, sinks=None, alpha1=.001, alpha2=.1, beta=10, restarts=10,
     >>> burnin = 2
     >>> delay = 2
 
-    >>> mpm, mps, fas = gibbs(source_df, sink_df, alpha1, alpha2, beta,restarts,
-    ...          draws_per_restart, burnin, delay,create_feature_tables=True)
+    >>> mpm, mps, fas = gibbs(source_df, sink_df, alpha1, alpha2, beta,
+    ...        restarts, draws_per_restart, burnin, delay,
+    ...        create_feature_tables=True)
 
     # Run the function on multiple processors
     >>> mpm, mps, fas = gibbs(source_df,sink_df, alpha1=alpha1,alpha2=alpha2,
-    ...        beta=beta, restarts=restarts,draws_per_restart=draws_per_restart,
-    ...           burnin=burnin, delay=delay, jobs=5,create_feature_tables=True)
+    ...       beta=beta, restarts=restarts,draws_per_restart=draws_per_restart,
+    ...          burnin=burnin, delay=delay, jobs=5,create_feature_tables=True)
 
     # LOO prediction.
     >>> mpm, mps, fas = gibbs(source_df, sink_df, alpha1=alpha1, alpha2=alpha2,
