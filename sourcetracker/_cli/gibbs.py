@@ -205,8 +205,7 @@ def gibbs(table_fp: Table,
                 source_index += 1
                 source_array = array[:, source_index]
                 split_array = np.array_split(source_array, draws_per_restart)
-                plt.figure(figsize=(8, 6), dpi=300), \
-                plt.title(sink_id, fontsize=(16))
+                plt.figure(figsize=(8, 6), dpi=300), plt.title(sink_id, fontsize=(16))
                 flagged = []
                 for splits in split_array:
                     data_sum = np.cumsum(splits)
@@ -218,8 +217,7 @@ def gibbs(table_fp: Table,
                     line_average = np.average(scalar)
                     line_average = np.round(line_average, decimals=4)
                     flagged.append(line_average)
-                    plt.plot(scalar, label=line_average), plt.legend(), \
-                    plt.ylabel(sources, fontsize=(16))
+                    plt.plot(scalar, label=line_average), plt.legend(), plt.ylabel(sources, fontsize=(16))
 
                 absolutes = [abs(chains) for chains in flagged]
                 difference = (max(absolutes) - min(absolutes))
