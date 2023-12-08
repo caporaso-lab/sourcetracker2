@@ -187,7 +187,8 @@ def collapse_source_data(sample_metadata, feature_table, source_samples,
         sample3   3.0
         sample4   3.0
 
-    >>> fdata = np.array([[ 10,  50,  10,  70],[  0,  25,  10,   5],[  0,  25,  10,   5],[100,   0,  10,   5]])
+    >>> fdata = np.array([[ 10,  50,  10,  70],[  0,  25,  10,   5],
+    ...                  [  0,  25,  10,   5],[100,   0,  10,   5]])
     >>> ftable = pd.DataFrame(fdata, index = stable.index)
     >>> ftable
                0   1   2   3
@@ -198,7 +199,8 @@ def collapse_source_data(sample_metadata, feature_table, source_samples,
 
     >>> source_samples = ['sample1', 'sample2', 'sample3']
     >>> method = 'sum'
-    >>> csources = collapse_source_data(stable, ftable, source_samples,category, method)
+    >>> csources = collapse_source_data(stable, ftable, source_samples,
+    ...            category, method)
     >>> csources
                    0   1   2   3
     collapse_col
@@ -332,7 +334,9 @@ class ConditionalProbability(object):
         --------
         The class is written so that it will be created before being passed to
         the function which handles the loops of the Gibbs sampling.
-        >>> cp = ConditionalProbability(alpha1 = .5, alpha2 = .001, beta = 10,source_data=np.array([[0, 0, 0, 100, 100, 100],[100, 100, 100, 0, 0, 0]]))
+        >>> cp = ConditionalProbability(alpha1 = .5, alpha2 = .001, beta = 10,
+        ...      source_data=np.array([[0, 0, 0, 100, 100, 100],
+        ...        [100, 100, 100, 0, 0, 0]]))
         Once it is passed to the Gibbs sampling function, the number of
         sequences in the sink becomes known, and we can update the object with
         this information to allow final precomputation.
