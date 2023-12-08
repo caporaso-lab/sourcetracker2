@@ -185,8 +185,6 @@ def gibbs(table_fp: Table,
     fig, ax = plot_heatmap(mpm.T)
     fig.savefig(os.path.join(output_dir, 'mixing_proportions.pdf'), dpi=300)
 
-    # Diagnostics code, should work, if not this code was prewritten 
-    #so this will be a bit of a mess
     if diagnostics:
         os.mkdir(output_dir + 'diagnostics')
         data = np.load('envcounts.npy', allow_pickle=True)
