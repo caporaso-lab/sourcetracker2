@@ -59,7 +59,7 @@ def validate_gibbs_input(sources, sinks=None):
         # we can't use e.g. np.isreal(df.dtypes).all(). Instead we use
         # applymap. Based on:
         # http://stackoverflow.com/questions/21771133/finding-non-numeric-rows-in-dataframe-in-pandas
-        if not df.map(np.isreal).values.all():
+        if not df.applymap(np.isreal).values.all():
             raise ValueError('A dataframe contains one or more values which '
                              'are not numeric. Data must be exclusively '
                              'positive integers.')
