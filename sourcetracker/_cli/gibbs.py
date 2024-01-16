@@ -123,6 +123,21 @@ from sourcetracker._gibbs_defaults import (DEFAULT_ALPH1, DEFAULT_ALPH2,
               show_default=True)
 @click.option('--limit', required=False, default=0.05, type=click.FLOAT,
               show_default=True)
+##(added options for graphical ouput and varying stats functions)
+@click.option('--stacked_bar', required=False, default=False, is_flag=True,
+              show_default=True)
+@click.option('--heatmap', required=False, default=True,
+              show_default=True)
+@click.option('--paired_heatmap', required=False, default=False, is_flag=True,
+              show_default=True)
+@click.option('--title', required=False, default='Mixing Proportions', 
+              type=click.STRING, show_default=True)
+@click.option('--color', required=False, default='viridis', type=click.STRING,
+              show_default=True)
+@click.option('--unknowns', required=False, default=True, is_flag=True,
+              show_default=True)
+@click.option('--transpose', required=False, default=False, is_flag=True,
+              show_default=True)
 def gibbs(table_fp: Table,
           mapping_fp: pd.DataFrame,
           output_dir: str,
@@ -144,7 +159,14 @@ def gibbs(table_fp: Table,
           sink_column_value: str,
           source_category_column: str,
           diagnostics: bool,
-          limit: float):
+          limit: float,
+          title: str,
+          stacked_bar: bool, 
+          heatmap: bool, 
+          paired_heatmap: bool,
+          color: str, 
+          unknowns: bool,
+          transpose: bool):
     '''Gibb's sampler for Bayesian estimation of microbial sample sources.
 
     For details, see the project README file.
@@ -185,6 +207,24 @@ def gibbs(table_fp: Table,
     fig, ax = plot_heatmap(mpm.T)
     fig.savefig(os.path.join(output_dir, 'mixing_proportions.pdf'), dpi=300)
 
+    # Plot contributions.
+    graphs = ST_graphs(mpm, output_dir, title=title, color=color)
+    if heatmap:
+        graphs.ST_heatmap()
+        if not unknowns:
+            graphs.ST_heatmap(unknowns=False)
+    if paired_heatmap:
+        graphs.ST_paired_heatmap()
+        if not unknowns:
+            graphs.ST_paired_heatmap(unknowns=False)
+            graphs.ST_paired_heatmap(unknowns=False, normalized=True)
+        if transpose:
+            graphs.ST_paired_heatmap(unknowns=False, normalized=True,
+                                     transpose=True)
+    if stacked_bar:
+        graphs.ST_Stacked_bar()
+        if not unknowns:
+            graphs.ST_Stacked_bar(unknowns=False)
     if diagnostics:
         os.mkdir(output_dir + 'diagnostics')
         data = np.load('envcounts.npy', allow_pickle=True)
