@@ -187,10 +187,8 @@ def collapse_source_data(sample_metadata, feature_table, source_samples,
         sample3   3.0
         sample4   3.0
 
-    >>> fdata = np.array([[ 10,  50,  10,  70],
-                          [  0,  25,  10,   5],
-                          [  0,  25,  10,   5],
-                          [100,   0,  10,   5]])
+    >>> fdata = np.array([[ 10,  50,  10,  70],[  0,  25,  10,   5],
+    ...                  [  0,  25,  10,   5],[100,   0,  10,   5]])
     >>> ftable = pd.DataFrame(fdata, index = stable.index)
     >>> ftable
                0   1   2   3
@@ -202,7 +200,7 @@ def collapse_source_data(sample_metadata, feature_table, source_samples,
     >>> source_samples = ['sample1', 'sample2', 'sample3']
     >>> method = 'sum'
     >>> csources = collapse_source_data(stable, ftable, source_samples,
-                                        category, method)
+    ...            category, method)
     >>> csources
                    0   1   2   3
     collapse_col
@@ -337,13 +335,13 @@ class ConditionalProbability(object):
         The class is written so that it will be created before being passed to
         the function which handles the loops of the Gibbs sampling.
         >>> cp = ConditionalProbability(alpha1 = .5, alpha2 = .001, beta = 10,
-        ...                             np.array([[0, 0, 0, 100, 100, 100],
-        ...                                      [100, 100, 100, 0, 0, 0]]))
+        ...      source_data=np.array([[0, 0, 0, 100, 100, 100],
+        ...        [100, 100, 100, 0, 0, 0]]))
         Once it is passed to the Gibbs sampling function, the number of
         sequences in the sink becomes known, and we can update the object with
         this information to allow final precomputation.
         >>> cp.set_n(367)
-        >>> cp.precompute()
+        >>> cp.precalculate()
         Now we can compute the 'slice' of the conditional probability depending
         on the current state of the test sequences (the ones randomly assigned
         and then iteratively reassigned) and which feature (the slice) the
@@ -710,8 +708,8 @@ def gibbs(sources, sinks=None, alpha1=.001, alpha2=.1, beta=10, restarts=10,
     >>> source2 = np.random.randint(0, 1000, size=50)
     >>> source3 = np.random.randint(0, 1000, size=50)
     >>> source_df = pd.DataFrame([source1, source2, source3],
-                                 index=['source1', 'source2', 'source3'],
-                                 columns=otus, dtype=np.int32)
+    ...    index=['source1', 'source2', 'source3'],
+    ...    columns=otus, dtype=np.int32)
 
     # Prepare some sink data.
     >>> sink1 = np.ceil(.5*source1+.5*source2)
@@ -721,9 +719,8 @@ def gibbs(sources, sinks=None, alpha1=.001, alpha2=.1, beta=10, restarts=10,
     >>> sink5 = source2
     >>> sink6 = np.random.randint(0, 1000, size=50)
     >>> sink_df = pd.DataFrame([sink1, sink2, sink3, sink4, sink5, sink6],
-                               index=np.array(['sink%s' % i for i in
-                                               range(1,7)]),
-                               columns=otus, dtype=np.int32)
+    ...    index=np.array(['sink%s' % i for i in range(1,7)]),
+    ...    columns=otus, dtype=np.int32)
 
     # Set paramaters
     >>> alpha1 = .01
@@ -735,20 +732,18 @@ def gibbs(sources, sinks=None, alpha1=.001, alpha2=.1, beta=10, restarts=10,
     >>> delay = 2
 
     >>> mpm, mps, fas = gibbs(source_df, sink_df, alpha1, alpha2, beta,
-                              restarts, draws_per_restart, burnin, delay,
-                              create_feature_tables=True)
+    ...        restarts, draws_per_restart, burnin, delay,
+    ...        create_feature_tables=True)
 
     # Run the function on multiple processors
-    >>> mpm, mps, fas = gibbs(source_df, sinks=None, alpha1=alpha1,
-                              alpha2=alpha2, beta=beta, restarts=restarts,
-                              draws_per_restart=draws_per_restart,
-                              burnin=burnin, delay=delay, jobs=5,
-                              create_feature_tables=True)
+    >>> mpm, mps, fas = gibbs(source_df,sink_df, alpha1=alpha1,alpha2=alpha2,
+    ...       beta=beta, restarts=restarts,draws_per_restart=draws_per_restart,
+    ...          burnin=burnin, delay=delay, jobs=5,create_feature_tables=True)
 
     # LOO prediction.
-    >>> mpm, mps, fas = gibbs(source_df, sinks=None, alpha1, alpha2, beta,
-                              restarts, draws_per_restart, burnin, delay,
-                              jobs=1, create_feature_tables=True)
+    >>> mpm, mps, fas = gibbs(source_df, sink_df, alpha1=alpha1, alpha2=alpha2,
+    ...       beta=beta,restarts=restarts, draws_per_restart=draws_per_restart,
+    ...        burnin=burnin, delay=delay,jobs=1, create_feature_tables=True)
     '''
     if not validate_gibbs_parameters(alpha1, alpha2, beta, restarts,
                                      draws_per_restart, burnin, delay):
@@ -838,6 +833,10 @@ def cumulative_proportions(all_envcounts, sink_ids, source_ids):
     are met. It is the user's responsibility to check these if using this
     function independently.
     '''
+
+    np.save('envcounts', all_envcounts)
+    np.save('sink_ids', sink_ids)
+    np.save('source_ids', source_ids)
     num_sinks = len(sink_ids)
     num_sources = len(source_ids) + 1
 
