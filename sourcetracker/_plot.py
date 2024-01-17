@@ -57,7 +57,7 @@ class ST_graphs:
                                      self.title + "_heatmap.png"))
         else:
             plt.savefig(os.path.join(self.file,
-                            self.title + "_heatmap_nounknown.png"))
+                                     self.title + "_heatmap_nounknown.png"))
 
     def ST_paired_heatmap(self, normalized=False, unknowns=True,
                           transpose=False, annot=True, ylabel='Sources'):
@@ -134,8 +134,8 @@ class ST_graphs:
         <-and here
         vmin=0, vmax=1.0,
         """
-        midpoint=len(prop.columns)/2
-        midpoint=round(midpoint)
+        midpoint = len(prop.columns)/2
+        midpoint = round(midpoint)
         # colo = self.color
         ratios, g, axes = [], [], []
         for i in range(len(prop.columns)):
@@ -147,7 +147,7 @@ class ST_graphs:
         fig, axes = plt.subplots(1, len(axes),
                                  gridspec_kw={'width_ratios': ratios},
                                  figsize=((prop.shape[1] + 6),
-                                (prop.shape[0] * 3 / 4)+4))
+                                          (prop.shape[0] * 3 / 4)+4))
         for i in range(len(prop.columns)):
             if i == 0:
                 g[i] = sns.heatmap(prop.iloc[:, i:i + 1],
@@ -155,8 +155,8 @@ class ST_graphs:
                                    cbar=False, annot=annot, ax=axes[i])
                 g[i].set_xlabel("")
                 g[i].set_ylabel(ylabel)
-            elif i==midpoint:
-                g[i]=sns.heatmap(prop.iloc[:, i:i+1], vmin=0,
+            elif i == midpoint:
+                g[i] = sns.heatmap(prop.iloc[:, i:i+1], vmin=0,
                                  cmap=self.color, cbar=False,
                                  annot=annot, ax=axes[i])
                 g[i].set_xlabel("")
@@ -186,18 +186,22 @@ class ST_graphs:
             ax.set_yticklabels(tly, rotation=0)
         if normalized:
             if unknowns:
+                add_line = "_pairedheatmap_normalized.png"
                 plt.savefig(os.path.join(self.file,
-                self.title + "_pairedheatmap_normalized.png"))
+                                         self.title + add_line))
             else:
+                add_line = "_pairedheatmap_nounknown_normalized.png"
                 plt.savefig(os.path.join(self.file,
-                self.title + "_pairedheatmap_nounknown_normalized.png"))
+                                         self.title + add+_line))
         else:
             if unknowns:
+                add_line = "_pairedheatmap.png"
                 plt.savefig(os.path.join(self.file,
-                self.title + "_pairedheatmap.png"))
+                                         self.title + add_line))
             else:
+                add_line = "_pairedheatmap_nounknowns.png"
                 plt.savefig(os.path.join(self.file,
-                self.title + "_pairedheatmap_nounknowns.png"))
+                                         self.title + add_line))
         if transpose:
             self.file = self.file[:-11]
 
@@ -208,7 +212,7 @@ class ST_graphs:
             # prop = prop.set_index('SampleID')
             prop = prop.drop(['Unknown'], axis=1)
             prop = prop.div(prop.sum(axis=1), axis=0)
-            #prop = prop.reset_index()
+            # prop = prop.reset_index()
         """
         # '#1f77b4'Blue, '#ff7f0e'Orange, '#2ca02c'Green, '#d62728'Red,
         # '#9467bd'Purple, '#8c564b'Brown, '#e377c2'Pink, '#7f7f7f'Grey,
@@ -234,10 +238,10 @@ class ST_graphs:
         plt.xticks(rotation=45, ha='right')
         if unknowns:
             plt.savefig(os.path.join(self.file,
-            self.title + "_stacked_bar.png"))
+                                     self.title + "_stacked_bar.png"))
         else:
             plt.savefig(os.path.join(self.file,
-            self.title + "_stacked_bar_nounknowns.png"))
+                                     self.title + "_stacked_bar_nounknowns.png"))
 
     def ST_bar(self, unknowns=True, x_lab="Sink",
                y_lab="Source Proportion", coloring=[]):
@@ -249,14 +253,14 @@ class ST_graphs:
             # prop = prop.reset_index()
 
         """
-        #'#1f77b4'Blue, '#ff7f0e'Orange, '#2ca02c'Green, '#d62728'Red,
-        #'#9467bd'Purple, '#8c564b'Brown, '#e377c2'Pink, '#7f7f7f'Grey,
+        # '#1f77b4'Blue, '#ff7f0e'Orange, '#2ca02c'Green, '#d62728'Red,
+        # '#9467bd'Purple, '#8c564b'Brown, '#e377c2'Pink, '#7f7f7f'Grey,
         '#bcbd22'Gold, '#17becf'Cyan
         #make sure to use contrasting colors in order better illuminate
         your data above are some example codes to use
         """
 
-        prop=prop.reset_index()
+        prop = prop.reset_index()
         if coloring != []:
             prop.plot(kind='bar', x=prop.columns[0], stacked=False,
                       figsize=((prop.shape[1] + 6),
