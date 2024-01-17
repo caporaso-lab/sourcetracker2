@@ -20,6 +20,7 @@ from matplotlib import pyplot as plt
 from sourcetracker._cli import cli
 from sourcetracker._gibbs import gibbs_helper
 from sourcetracker._plot import plot_heatmap
+from sourcetracker._plot import ST_graphs
 from sourcetracker._util import parse_sample_metadata, biom_to_df
 
 # import default descriptions
@@ -123,14 +124,14 @@ from sourcetracker._gibbs_defaults import (DEFAULT_ALPH1, DEFAULT_ALPH2,
               show_default=True)
 @click.option('--limit', required=False, default=0.05, type=click.FLOAT,
               show_default=True)
-##(added options for graphical ouput and varying stats functions)
+#(added options for graphical ouput and varying stats functions)
 @click.option('--stacked_bar', required=False, default=False, is_flag=True,
               show_default=True)
 @click.option('--heatmap', required=False, default=True,
               show_default=True)
 @click.option('--paired_heatmap', required=False, default=False, is_flag=True,
               show_default=True)
-@click.option('--title', required=False, default='Mixing Proportions', 
+@click.option('--title', required=False, default='Mixing Proportions',
               type=click.STRING, show_default=True)
 @click.option('--color', required=False, default='viridis', type=click.STRING,
               show_default=True)
@@ -161,10 +162,10 @@ def gibbs(table_fp: Table,
           diagnostics: bool,
           limit: float,
           title: str,
-          stacked_bar: bool, 
-          heatmap: bool, 
+          stacked_bar: bool,
+          heatmap: bool,
           paired_heatmap: bool,
-          color: str, 
+          color: str,
           unknowns: bool,
           transpose: bool):
     '''Gibb's sampler for Bayesian estimation of microbial sample sources.
