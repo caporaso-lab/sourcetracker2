@@ -10,9 +10,8 @@
 
 import seaborn as sns
 import matplotlib.pyplot as plt
-import pandas as pd
-import numpy as np
 import os
+
 
 def plot_heatmap(mpm, cm=plt.cm.viridis, xlabel='Sources', ylabel='Sinks',
                  title='Mixing Proportions (as Fraction)'):
@@ -25,7 +24,8 @@ def plot_heatmap(mpm, cm=plt.cm.viridis, xlabel='Sources', ylabel='Sinks',
     ax.set_ylabel(ylabel)
     ax.set_title(title)
     return fig, ax
-                   
+
+
 class ST_graphs:
     def __init__(self, mpm, output_dir,
                  title='Mixing Proportions', color='viridis'):
@@ -64,7 +64,7 @@ class ST_graphs:
         """
         normalized=True means that you wish to normalize
         each column to equal to 1 to represent the likelihood
-        that each member of the pair can be mapped its' 
+        that each member of the pair can be mapped its'
         counter out of 1.
         instead of less than 1. I recommend to do this
         to get a better idea of the proportion. Also recommend if getting
@@ -78,7 +78,7 @@ class ST_graphs:
         I would recommend running both separately
         and together in order to eliminate marginal cases.
 
-        Any analysis should be done using a bin(n,x) 
+        Any analysis should be done using a bin(n,x)
         distributions to better give a good idea of these distributions.
 
         Color=viridis spans from dark purple to yellow through blue and green.
@@ -87,17 +87,17 @@ class ST_graphs:
         This is slightly better in the lower to mid ranges
         and seperating on the lower end of the proportions.
 
-        coolwarm is deep red to deep blue and can be good for 
+        coolwarm is deep red to deep blue and can be good for
         either extreme ranges or data sets with an average of 0.
 
-        Icefire is very good for middle ranges as these are 
+        Icefire is very good for middle ranges as these are
         darker and will better show them.
-        can be more useful if you are running into a low data 
+        can be more useful if you are running into a low data
         issue and are getting extreme values.
         That said, usually not ideal for these maps.
 
         more can be found on these sites.
-        https://seaborn.pydata.org/tutorial/color_palettes.html 
+        https://seaborn.pydata.org/tutorial/color_palettes.html
         <-more color palattes here
         https://matplotlib.org/stable/tutorials/colors/colormaps.html
         <-and here
@@ -109,7 +109,7 @@ class ST_graphs:
         vmin=min is also what we use here but the standard version
         will use vmin=0 in order to show the minimum possible
         and vmax=1.
-        The reason I do not in this case is that these ranges 
+        The reason I do not in this case is that these ranges
         are not particularly helpful to distinguishing the
         successful matches to each other.
         vmin=0, vmax=1.0,
@@ -126,9 +126,9 @@ class ST_graphs:
 
         """
         "viridis" "icefire" "vlag" "Spectral" "mako" "magma"
-        "coolwarm" "rocket" "flare" "crest" 
+        "coolwarm" "rocket" "flare" "crest"
         "_r" reverses all of these
-        https://seaborn.pydata.org/tutorial/color_palettes.html 
+        https://seaborn.pydata.org/tutorial/color_palettes.html
         <-more color palattes here
         https://matplotlib.org/stable/tutorials/colors/colormaps.html
         <-and here
@@ -156,9 +156,9 @@ class ST_graphs:
                 g[i].set_xlabel("")
                 g[i].set_ylabel(ylabel)
             elif i==midpoint:
-                g[i]=sns.heatmap(prop.iloc[:,i:i+1],vmin=0,
-                                 cmap=self.color ,cbar=False,
-                                 annot=annot,ax=axes[i])
+                g[i]=sns.heatmap(prop.iloc[:, i:i+1], vmin=0,
+                                 cmap=self.color, cbar=False,
+                                 annot=annot, ax=axes[i])
                 g[i].set_xlabel("")
                 g[i].set_ylabel("")
                 g[i].set_yticks([])
@@ -205,15 +205,15 @@ class ST_graphs:
                        y_lab="Source Proportion", coloring=[]):
         prop = self.mpm
         if not unknowns:
-            #prop = prop.set_index('SampleID')
+            # prop = prop.set_index('SampleID')
             prop = prop.drop(['Unknown'], axis=1)
             prop = prop.div(prop.sum(axis=1), axis=0)
             #prop = prop.reset_index()
         """
-        #'#1f77b4'Blue, '#ff7f0e'Orange, '#2ca02c'Green, '#d62728'Red, 
-        #'#9467bd'Purple, '#8c564b'Brown, '#e377c2'Pink, '#7f7f7f'Grey,
-        '#bcbd22'Gold, '#17becf'Cyan
-        #make sure to use contrasting colors in order better illuminate
+        # '#1f77b4'Blue, '#ff7f0e'Orange, '#2ca02c'Green, '#d62728'Red,
+        # '#9467bd'Purple, '#8c564b'Brown, '#e377c2'Pink, '#7f7f7f'Grey,
+        # 'bcbd22'Gold, '#17becf'Cyan
+        # make sure to use contrasting colors in order better illuminate
         your data above are some example codes to use
         """
         prop=prop.reset_index()
@@ -243,17 +243,19 @@ class ST_graphs:
                y_lab="Source Proportion", coloring=[]):
         prop = self.mpm
         if not unknowns:
-            #prop = prop.set_index('SampleID')
+            # prop = prop.set_index('SampleID')
             prop = prop.drop(['Unknown'], axis=1)
             prop = prop.div(prop.sum(axis=1), axis=0)
-            #prop = prop.reset_index()
+            # prop = prop.reset_index()
+
         """
-        #'#1f77b4'Blue, '#ff7f0e'Orange, '#2ca02c'Green, '#d62728'Red, 
+        #'#1f77b4'Blue, '#ff7f0e'Orange, '#2ca02c'Green, '#d62728'Red,
         #'#9467bd'Purple, '#8c564b'Brown, '#e377c2'Pink, '#7f7f7f'Grey,
         '#bcbd22'Gold, '#17becf'Cyan
-        #make sure to use contrasting colors in order better illuminate 
+        #make sure to use contrasting colors in order better illuminate
         your data above are some example codes to use
         """
+
         prop=prop.reset_index()
         if coloring != []:
             prop.plot(kind='bar', x=prop.columns[0], stacked=False,
@@ -275,4 +277,3 @@ class ST_graphs:
         else:
             plt.savefig(os.path.join(self.file,
                         self.title + "_bar_nounknowns.png"))
-          
