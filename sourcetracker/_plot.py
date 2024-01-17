@@ -157,8 +157,8 @@ class ST_graphs:
                 g[i].set_ylabel(ylabel)
             elif i == midpoint:
                 g[i] = sns.heatmap(prop.iloc[:, i:i+1], vmin=0,
-                                 cmap=self.color, cbar=False,
-                                 annot=annot, ax=axes[i])
+                                   cmap=self.color, cbar=False,
+                                   annot=annot, ax=axes[i])
                 g[i].set_xlabel("")
                 g[i].set_ylabel("")
                 g[i].set_yticks([])
@@ -192,7 +192,7 @@ class ST_graphs:
             else:
                 add_line = "_pairedheatmap_nounknown_normalized.png"
                 plt.savefig(os.path.join(self.file,
-                                         self.title + add+_line))
+                                         self.title + add_line))
         else:
             if unknowns:
                 add_line = "_pairedheatmap.png"
@@ -220,7 +220,7 @@ class ST_graphs:
         # make sure to use contrasting colors in order better illuminate
         your data above are some example codes to use
         """
-        prop=prop.reset_index()
+        prop = prop.reset_index()
         if coloring != []:
             prop.plot(kind='bar', x=prop.columns[0], stacked=True,
                       figsize=((prop.shape[1] + 6),
@@ -240,8 +240,9 @@ class ST_graphs:
             plt.savefig(os.path.join(self.file,
                                      self.title + "_stacked_bar.png"))
         else:
+            add_line = "_stacked_bar_nounknowns.png"
             plt.savefig(os.path.join(self.file,
-                                     self.title + "_stacked_bar_nounknowns.png"))
+                                     self.title + add_line))
 
     def ST_bar(self, unknowns=True, x_lab="Sink",
                y_lab="Source Proportion", coloring=[]):
