@@ -10,7 +10,9 @@
 
 import seaborn as sns
 import matplotlib.pyplot as plt
-
+import pandas as pd
+import numpy as np
+import os
 
 def plot_heatmap(mpm, cm=plt.cm.viridis, xlabel='Sources', ylabel='Sinks',
                  title='Mixing Proportions (as Fraction)'):
