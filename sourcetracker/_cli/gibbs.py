@@ -19,7 +19,6 @@ from matplotlib import pyplot as plt
 
 from sourcetracker._cli import cli
 from sourcetracker._gibbs import gibbs_helper
-from sourcetracker._plot import plot_heatmap
 from sourcetracker._plot import ST_graphs
 from sourcetracker._util import parse_sample_metadata, biom_to_df
 
