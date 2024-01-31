@@ -205,10 +205,6 @@ def gibbs(table_fp: Table,
                sep='\t')
 
     # Plot contributions.
-    fig, ax = plot_heatmap(mpm.T)
-    fig.savefig(os.path.join(output_dir, 'mixing_proportions.pdf'), dpi=300)
-
-    # Plot contributions.
     graphs = ST_graphs(mpm, output_dir, title=title, color=color)
     if heatmap:
         graphs.ST_heatmap()
