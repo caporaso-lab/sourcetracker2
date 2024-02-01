@@ -71,7 +71,7 @@ classifiers = [s.strip() for s in classes.split('\n') if s]
 
 description = "Python implementation of the SourceTracker R package."
 
-standalone = ['sourcetracker2=sourcetracker._cli.gibbs:gibbs']
+standalone = ['sourcetracker2=sourcetracker._cli.cli:cli']
 q2cmds = ['q2-sourcetracker2=sourcetracker._q2.plugin_setup:plugin']
 
 with open('README.md') as f:
