@@ -126,7 +126,7 @@ from sourcetracker._gibbs_defaults import (DEFAULT_ALPH1, DEFAULT_ALPH2,
 # (added options for graphical ouput and varying stats functions)
 @click.option('--stacked_bar', required=False, default=False, is_flag=True,
               show_default=True)
-@click.option('--heatmap', required=False, default=True,
+@click.option('--heatmap', required=False, default=True, is_flag=True,
               show_default=True)
 @click.option('--paired_heatmap', required=False, default=False, is_flag=True,
               show_default=True)
