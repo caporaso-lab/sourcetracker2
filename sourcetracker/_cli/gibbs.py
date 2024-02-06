@@ -132,8 +132,8 @@ from sourcetracker._gibbs_defaults import (DEFAULT_ALPH1, DEFAULT_ALPH2,
               show_default=True)
 @click.option('--title', required=False, default='Mixing Proportions',
               type=click.STRING, show_default=True)
-@click.option('--heatmap_color', required=False, default='viridis', type=click.STRING,
-              show_default=True)
+@click.option('--heatmap_color', required=False, default='viridis',
+              type=click.STRING, show_default=True)
 @click.option('--unknowns', required=False, default=True, is_flag=True,
               show_default=True)
 @click.option('--transpose', required=False, default=False, is_flag=True,
