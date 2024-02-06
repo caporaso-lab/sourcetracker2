@@ -31,7 +31,7 @@ class ST_graphs:
         if not unknowns:
             prop = prop.drop(['Unknown'], axis=1)
             prop = prop.div(prop.sum(axis=1), axis=0)
-        fig, ax = plt.subplots(figsize=((prop.shape[1] * 3 / 4)+4),
+        fig, ax = plt.subplots(figsize=((prop.shape[1] * 3 / 4)+4,
                                         (prop.shape[0] * 3 / 4)+4))
         sns.heatmap(prop, vmin=0.0, vmax=vmax, cmap=self.color,
                     annot=annot, linewidths=.5, ax=ax)  # ,vmax=1.0
@@ -133,7 +133,7 @@ class ST_graphs:
         axes.append("axcb")
         fig, axes = plt.subplots(1, len(axes),
                                  gridspec_kw={'width_ratios': ratios},
-                                 figsize=((prop.shape[1] * 3 / 4)+4),
+                                 figsize=((prop.shape[1] * 3 / 4)+4,
                                           (prop.shape[0] * 3 / 4)+4))
         for i in range(len(prop.columns)):
             if i == 0:
@@ -210,12 +210,12 @@ class ST_graphs:
         prop = prop.reset_index()
         if coloring != []:
             prop.plot(kind='bar', x=prop.columns[0], stacked=True,
-                      figsize=((prop.shape[1] * 3 / 4)+4),
+                      figsize=((prop.shape[1] * 3 / 4)+4,
                       (prop.shape[0] * 3 / 4)+4),
                       color=coloring)
         else:
             prop.plot(kind='bar', x=prop.columns[0], stacked=True,
-                      figsize=((prop.shape[1] * 3 / 4)+4),
+                      figsize=((prop.shape[1] * 3 / 4)+4,
                       (prop.shape[0] * 3 / 4)+4))
         # plt.legend(loc=(1.05, 0.5), labelspacing=-3, frameon=True)
         plt.xlabel(x_lab)
@@ -251,12 +251,12 @@ class ST_graphs:
         prop = prop.reset_index()
         if coloring != []:
             prop.plot(kind='bar', x=prop.columns[0], stacked=False,
-                      figsize=((prop.shape[1] * 3 / 4)+4),
+                      figsize=((prop.shape[1] * 3 / 4)+4,
                       (prop.shape[0] * 3 / 4 + 4)),
                       color=coloring)
         else:
             prop.plot(kind='bar', x=prop.columns[0], stacked=False,
-                      figsize=((prop.shape[1] * 3 / 4)+4),
+                      figsize=((prop.shape[1] * 3 / 4)+4,
                       (prop.shape[0] * 3 / 4 + 4)))
         plt.xlabel(x_lab)
         plt.ylabel(y_lab)
