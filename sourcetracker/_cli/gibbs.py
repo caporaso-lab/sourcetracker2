@@ -132,7 +132,7 @@ from sourcetracker._gibbs_defaults import (DEFAULT_ALPH1, DEFAULT_ALPH2,
               show_default=True)
 @click.option('--title', required=False, default='Mixing Proportions',
               type=click.STRING, show_default=True)
-@click.option('--color', required=False, default='viridis', type=click.STRING,
+@click.option('--heatmap_color', required=False, default='viridis', type=click.STRING,
               show_default=True)
 @click.option('--unknowns', required=False, default=True, is_flag=True,
               show_default=True)
@@ -164,7 +164,7 @@ def gibbs(table_fp: Table,
           stacked_bar: bool,
           heatmap: bool,
           paired_heatmap: bool,
-          color: str,
+          heatmap_color: str,
           unknowns: bool,
           transpose: bool):
     '''Gibb's sampler for Bayesian estimation of microbial sample sources.
@@ -204,7 +204,7 @@ def gibbs(table_fp: Table,
                sep='\t')
 
     # Plot contributions.
-    graphs = ST_graphs(mpm, output_dir, title=title, color=color)
+    graphs = ST_graphs(mpm, output_dir, title=title, color=heatmap_color)
     if heatmap:
         graphs.ST_heatmap()
         if not unknowns:
