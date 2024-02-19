@@ -10,15 +10,10 @@
 
 from __future__ import division
 
-import os
 import click
 import pandas as pd
-import numpy as np
-from biom import Table, load_table
-from matplotlib import pyplot as plt
 
 from sourcetracker._cli import cli
-from sourcetracker._gibbs import gibbs_helper
 from sourcetracker._plot import ST_graphs
 
 
@@ -65,7 +60,8 @@ def plots(
           x_lab: str,
           y_lab: str):
     color_list = bar_color.split()
-    graphs = ST_graphs(mixing_props, output_dir, title=title, color=heatmap_color)
+    graphs = ST_graphs(mixing_props, output_dir, title=title,
+                       color=heatmap_color)
     if heatmap:
         graphs.ST_heatmap()
         if not unknowns:
@@ -74,7 +70,8 @@ def plots(
         graphs.ST_paired_heatmap()
         if not unknowns:
             graphs.ST_paired_heatmap(unknowns=False, ylabel=y_lab)
-            graphs.ST_paired_heatmap(unknowns=False, normalized=True, ylabel=y_lab)
+            graphs.ST_paired_heatmap(unknowns=False, normalized=True,
+                                     ylabel=y_lab)
         if transpose:
             graphs.ST_paired_heatmap(unknowns=False, normalized=True,
                                      transpose=True, ylabel=y_lab)
