@@ -193,8 +193,14 @@ class ST_graphs:
             self.file = self.file[:-11]
 
     def ST_Stacked_bar(self, unknowns=True, x_lab="Sink",
-                       y_lab="Source Proportion", coloring=[]):
+                       y_lab="Source Proportion", coloring=[], flipped=False):
         prop = self.mpm
+        if flipped:
+            prop = prop.T
+            y_lab_flip = x_lab
+            x_lab_flip = y_lab
+            y_lab = y_lab_flip
+            x_lab = x_lab_flip
         if not unknowns:
             # prop = prop.set_index('SampleID')
             prop = prop.drop(['Unknown'], axis=1)
@@ -223,11 +229,16 @@ class ST_graphs:
         plt.title(self.title)
         plt.autoscale()
         plt.xticks(rotation=45, ha='right')
-        if unknowns:
+        if unknowns and flipped:
+            plt.savefig(os.path.join(self.file,
+                                     self.title + "_flipped_stacked_bar.png"))
+        elif unknowns:
             plt.savefig(os.path.join(self.file,
                                      self.title + "_stacked_bar.png"))
         else:
             add_line = "_stacked_bar_nounknowns.png"
+            if flipped:
+                add_line = "flipped_stacked_bar_nounknowns.png"
             plt.savefig(os.path.join(self.file,
                                      self.title + add_line))
 
