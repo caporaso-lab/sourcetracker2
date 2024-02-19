@@ -18,3 +18,4 @@ def cli():
 
 
 import_module('sourcetracker._cli.gibbs')
+import_module('sourcetracker._cli.plots')
