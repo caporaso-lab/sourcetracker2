@@ -138,6 +138,10 @@ from sourcetracker._gibbs_defaults import (DEFAULT_ALPH1, DEFAULT_ALPH2,
               show_default=True)
 @click.option('--transpose', required=False, default=False, is_flag=True,
               show_default=True)
+@click.option('--bar_color', required=False, default="", type=click.STRING,
+              show_default=True)
+@click.option('--flip_bar', required=False, default=False, is_flag=True,
+              show_default=True)
 def gibbs(table_fp: Table,
           mapping_fp: pd.DataFrame,
           output_dir: str,
@@ -166,7 +170,9 @@ def gibbs(table_fp: Table,
           paired_heatmap: bool,
           heatmap_color: str,
           unknowns: bool,
-          transpose: bool):
+          transpose: bool,
+          bar_color: str,
+          flip_bar: bool):
     '''Gibb's sampler for Bayesian estimation of microbial sample sources.
 
     For details, see the project README file.
@@ -202,7 +208,8 @@ def gibbs(table_fp: Table,
     mpm.to_csv(os.path.join(output_dir, 'mixing_proportions.txt'), sep='\t')
     mps.to_csv(os.path.join(output_dir, 'mixing_proportions_stds.txt'),
                sep='\t')
-
+    # need to count number of rows here to check for equality
+    color_list = bar_color.split()
     # Plot contributions.
     graphs = ST_graphs(mpm, output_dir, title=title, color=heatmap_color)
     if heatmap:
@@ -218,9 +225,10 @@ def gibbs(table_fp: Table,
             graphs.ST_paired_heatmap(unknowns=False, normalized=True,
                                      transpose=True)
     if stacked_bar:
-        graphs.ST_Stacked_bar()
+        graphs.ST_Stacked_bar(coloring=color_list, flipped=flip_bar)
         if not unknowns:
-            graphs.ST_Stacked_bar(unknowns=False)
+            graphs.ST_Stacked_bar(unknowns=False, coloring=color_list,
+                                  flipped=flip_bar)
     if diagnostics:
         os.mkdir(output_dir + 'diagnostics')
         data = np.load('envcounts.npy', allow_pickle=True)
