@@ -195,7 +195,7 @@ class ST_graphs:
     def ST_Stacked_bar(self, unknowns=True, x_lab="Sink",
                        y_lab="Source Proportion", coloring=[], flipped=False):
         prop = self.mpm
-        if flipped == True:
+        if flipped:
             prop = prop.T
             y_lab_flip = x_lab
             x_lab_flip = y_lab
