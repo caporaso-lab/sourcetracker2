@@ -16,5 +16,6 @@ from sourcetracker import __version__
 def cli():
     pass
 
+
 import_module('sourcetracker._cli.gibbs')
 import_module('sourcetracker._cli.plots')
