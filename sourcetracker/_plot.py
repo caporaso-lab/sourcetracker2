@@ -109,7 +109,7 @@ class ST_graphs:
             prop = prop.div(prop.sum(axis=0), axis=1)
         if transpose:
             prop = prop.T
-            self.file = self.file + '_Transposed'
+            #self.file = self.file + '_Transposed'
 
         """
         "viridis" "icefire" "vlag" "Spectral" "mako" "magma"
@@ -189,8 +189,8 @@ class ST_graphs:
                 add_line = "_pairedheatmap_nounknowns.png"
                 plt.savefig(os.path.join(self.file,
                                          self.title + add_line))
-        if transpose:
-            self.file = self.file[:-11]
+        #if transpose:
+            #self.file = self.file[:-11]
 
     def ST_Stacked_bar(self, unknowns=True, x_lab="Sink",
                        y_lab="Source Proportion", coloring=[], flipped=False):
