@@ -17,7 +17,7 @@ class ST_graphs:
     def __init__(self, mpm, output_dir,
                  title='Mixing Proportions', color='viridis'):
         self.file = output_dir
-        self.mpm = mpm
+        self.mpm = mpm.T
         self.title = title
         self.color = color
 
