@@ -107,9 +107,10 @@ class ST_graphs:
             prop = prop.div(prop.sum(axis=1), axis=0)
         if normalized:
             prop = prop.div(prop.sum(axis=0), axis=1)
+        tra = ""
         if transpose:
             prop = prop.T
-# self.file = self.file + '_Transposed'
+            tra = "_Transposed"
 
         """
         "viridis" "icefire" "vlag" "Spectral" "mako" "magma"
@@ -173,24 +174,22 @@ class ST_graphs:
             ax.set_yticklabels(tly, rotation=0)
         if normalized:
             if unknowns:
-                add_line = "_pairedheatmap_normalized.png"
+                add_line = tra + "_pairedheatmap_normalized.png"
                 plt.savefig(os.path.join(self.file,
                                          self.title + add_line))
             else:
-                add_line = "_pairedheatmap_nounknown_normalized.png"
+                add_line = tra + "_pairedheatmap_nounknown_normalized.png"
                 plt.savefig(os.path.join(self.file,
                                          self.title + add_line))
         else:
             if unknowns:
-                add_line = "_pairedheatmap.png"
+                add_line = tra + "_pairedheatmap.png"
                 plt.savefig(os.path.join(self.file,
                                          self.title + add_line))
             else:
-                add_line = "_pairedheatmap_nounknowns.png"
+                add_line = tra + "_pairedheatmap_nounknowns.png"
                 plt.savefig(os.path.join(self.file,
                                          self.title + add_line))
-# if transpose:
-# self.file = self.file[:-11]
 
     def ST_Stacked_bar(self, unknowns=True, x_lab="Sink",
                        y_lab="Source Proportion", coloring=[], flipped=False):
