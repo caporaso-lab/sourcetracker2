@@ -224,6 +224,9 @@ def gibbs(table_fp: Table,
         if transpose:
             graphs.ST_paired_heatmap(unknowns=False, normalized=True,
                                      transpose=True)
+            graphs.ST_paired_heatmap(normalized=True,
+                                     transpose=True)
+            graphs.ST_paired_heatmap(transpose=True)
     if stacked_bar:
         graphs.ST_Stacked_bar(coloring=color_list, flipped=flip_bar)
         if not unknowns:
