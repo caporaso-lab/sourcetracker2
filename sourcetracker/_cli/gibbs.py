@@ -19,7 +19,7 @@ from matplotlib import pyplot as plt
 
 from sourcetracker._cli.cli import cli
 from sourcetracker._gibbs import gibbs_helper
-from sourcetracker._plot import plot_heatmap
+from sourcetracker._plot import ST_graphs
 from sourcetracker._util import parse_sample_metadata, biom_to_df
 
 # import default descriptions
@@ -123,6 +123,25 @@ from sourcetracker._gibbs_defaults import (DEFAULT_ALPH1, DEFAULT_ALPH2,
               show_default=True)
 @click.option('--limit', required=False, default=0.05, type=click.FLOAT,
               show_default=True)
+# (added options for graphical ouput and varying stats functions)
+@click.option('--stacked_bar', required=False, default=False, is_flag=True,
+              show_default=True)
+@click.option('--heatmap', required=False, default=True, is_flag=True,
+              show_default=True)
+@click.option('--paired_heatmap', required=False, default=False, is_flag=True,
+              show_default=True)
+@click.option('--title', required=False, default='Mixing Proportions',
+              type=click.STRING, show_default=True)
+@click.option('--heatmap_color', required=False, default='viridis',
+              type=click.STRING, show_default=True)
+@click.option('--unknowns', required=False, default=True, is_flag=True,
+              show_default=True)
+@click.option('--transpose', required=False, default=False, is_flag=True,
+              show_default=True)
+@click.option('--bar_color', required=False, default="", type=click.STRING,
+              show_default=True)
+@click.option('--flip_bar', required=False, default=False, is_flag=True,
+              show_default=True)
 def gibbs(table_fp: Table,
           mapping_fp: pd.DataFrame,
           output_dir: str,
@@ -144,7 +163,16 @@ def gibbs(table_fp: Table,
           sink_column_value: str,
           source_category_column: str,
           diagnostics: bool,
-          limit: float):
+          limit: float,
+          title: str,
+          stacked_bar: bool,
+          heatmap: bool,
+          paired_heatmap: bool,
+          heatmap_color: str,
+          unknowns: bool,
+          transpose: bool,
+          bar_color: str,
+          flip_bar: bool):
     '''Gibb's sampler for Bayesian estimation of microbial sample sources.
 
     For details, see the project README file.
@@ -180,11 +208,30 @@ def gibbs(table_fp: Table,
     mpm.to_csv(os.path.join(output_dir, 'mixing_proportions.txt'), sep='\t')
     mps.to_csv(os.path.join(output_dir, 'mixing_proportions_stds.txt'),
                sep='\t')
-
+    # need to count number of rows here to check for equality
+    color_list = bar_color.split()
     # Plot contributions.
-    fig, ax = plot_heatmap(mpm.T)
-    fig.savefig(os.path.join(output_dir, 'mixing_proportions.pdf'), dpi=300)
-
+    graphs = ST_graphs(mpm, output_dir, title=title, color=heatmap_color)
+    if heatmap:
+        graphs.ST_heatmap()
+        if not unknowns:
+            graphs.ST_heatmap(unknowns=False)
+    if paired_heatmap:
+        graphs.ST_paired_heatmap()
+        if not unknowns:
+            graphs.ST_paired_heatmap(unknowns=False)
+            graphs.ST_paired_heatmap(unknowns=False, normalized=True)
+        if transpose:
+            graphs.ST_paired_heatmap(unknowns=False, normalized=True,
+                                     transpose=True)
+            graphs.ST_paired_heatmap(normalized=True,
+                                     transpose=True)
+            graphs.ST_paired_heatmap(transpose=True)
+    if stacked_bar:
+        graphs.ST_Stacked_bar(coloring=color_list, flipped=flip_bar)
+        if not unknowns:
+            graphs.ST_Stacked_bar(unknowns=False, coloring=color_list,
+                                  flipped=flip_bar)
     if diagnostics:
         os.mkdir(output_dir + 'diagnostics')
         data = np.load('envcounts.npy', allow_pickle=True)
